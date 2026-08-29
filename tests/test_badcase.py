@@ -53,10 +53,65 @@ def test_join_classifies_and_attaches_metadata(tmp_path):
     assert joined[str(fake)]["error_type"] == "TP"
     assert joined[str(real)]["error_type"] == "FP"  # real image scored 0.8 >= 0.5
     assert joined[str(fake)]["generator"] == "sd14"
-    assert joined[str(real)]["generator"] == "unknown"  # absent from manifest
+    assert joined[str(real)]["generator"] == "real"  # reals have no generator by definition
     assert joined[str(real)]["condition"] == "clean"
     assert res["unmatched_labels"] == 2  # c.png has no label; nowhere.png is foreign
     assert res["unmatched_metadata"] == 1  # only real/b.png lacks manifest metadata
+
+
+def test_join_metadata_survives_path_form_mismatch(tmp_path, monkeypatch):
+    """Absolute pred paths must still attach to a CWD-relative manifest (PR#5 review).
+
+    predict.py emits whatever form the caller passed (absolute on Vast) while
+    build_source stores CWD-relative paths; string-equality matching silently
+    dropped every generator. Both directions must survive.
+    """
+    monkeypatch.chdir(tmp_path)
+    fake = Path("images/fake/a.png")
+    fake.parent.mkdir(parents=True)
+    make_image(seed=1).save(fake)
+    manifest = [{"path": "images/fake/a.png", "generator": "dalle3",
+                 "source_dataset": "demo_wildfake"}]
+
+    # direction 1: absolute pred paths (Vast style) + relative manifest
+    res = join_predictions(
+        [{"image_path": str(fake.resolve()), "pred": 0.9}],
+        rows=[(fake, 1)],
+        src_root=Path("images"),
+        predict_root=Path("images"),
+        threshold=0.5,
+        manifest_rows=manifest,
+    )
+    assert res["joined"][0]["generator"] == "dalle3"
+    assert res["unmatched_metadata"] == 0
+
+    # direction 2: relative pred paths + absolute manifest
+    res2 = join_predictions(
+        [{"image_path": "images/fake/a.png", "pred": 0.9}],
+        rows=[(fake.resolve(), 1)],
+        src_root=fake.resolve().parent.parent,
+        predict_root=fake.resolve().parent.parent,
+        threshold=0.5,
+        manifest_rows=[{**manifest[0], "path": str(fake.resolve())}],
+    )
+    assert res2["joined"][0]["generator"] == "dalle3"
+    assert res2["unmatched_metadata"] == 0
+
+
+def test_join_rejects_malformed_pred_json(tmp_path):
+    real = tmp_path / "real" / "a.png"
+    real.parent.mkdir(parents=True)
+    make_image(seed=1).save(real)
+    rows = [(real, 0)]
+    with pytest.raises(SystemExit):  # top level not a list
+        join_predictions({"not": "a list"}, rows=rows, src_root=tmp_path, predict_root=tmp_path)
+    with pytest.raises(SystemExit):  # row not an object
+        join_predictions(["data/val/a.png"], rows=rows, src_root=tmp_path, predict_root=tmp_path)
+    with pytest.raises(SystemExit):  # NaN score would silently become an FN
+        join_predictions(
+            [{"image_path": str(real), "pred": float("nan")}],
+            rows=rows, src_root=tmp_path, predict_root=tmp_path,
+        )
 
 
 def test_summarize_groups_and_worst_k(tmp_path):
@@ -72,8 +127,11 @@ def test_summarize_groups_and_worst_k(tmp_path):
     ]
     summary = summarize(rows, threshold=0.5, worst_k=1)
     assert summary["n_images"] == 4 and summary["n_fp"] == 2 and summary["n_fn"] == 1
+    assert summary["n_real"] == 2 and summary["n_fake"] == 2
+    assert summary["fpr"] == 1.0 and summary["fnr"] == 0.5
     assert summary["by_generator"]["sd14"] == {
-        "n_images": 2, "n_fp": 1, "n_fn": 1, "fp_rate": 0.5, "fn_rate": 0.5,
+        "n_images": 2, "n_real": 1, "n_fake": 1, "n_fp": 1, "n_fn": 1,
+        "fpr": 1.0, "fnr": 1.0,
     }
     assert summary["by_condition"]["jpeg_q50"]["n_images"] == 2
     assert [r["image_path"] for r in summary["worst_fp"]] == ["f1"]  # highest pred first
@@ -83,9 +141,12 @@ def test_summarize_groups_and_worst_k(tmp_path):
     write_stats_csv(out, summary)
     with out.open(newline="", encoding="utf-8") as fh:
         table = list(csv.reader(fh))
-    assert table[0] == ["group_type", "group_value", "n_images", "n_fp", "n_fn", "fp_rate", "fn_rate"]
-    assert ["overall", "all", "4", "2", "1", "0.5", "0.25"] in table
-    assert ["generator", "sd14", "2", "1", "1", "0.5", "0.5"] in table
+    assert table[0] == [
+        "group_type", "group_value", "n_images", "n_real", "n_fake",
+        "n_fp", "n_fn", "fpr", "fnr",
+    ]
+    assert ["overall", "all", "4", "2", "2", "2", "1", "1.0", "0.5"] in table
+    assert ["generator", "sd14", "2", "1", "1", "1", "1", "1.0", "1.0"] in table
 
 
 def test_cli_end_to_end(tmp_path):
@@ -130,12 +191,16 @@ def test_cli_end_to_end(tmp_path):
     }
     by_path = {b["image_path"]: b for b in badcases}
     assert by_path[str(fake / "b.png")]["generator"] == "unknown"
+    assert by_path[str(real / "c.png")]["generator"] == "real"  # label-0, manifest generator null
 
     summary = json.loads((out_dir / "badcase_summary.json").read_text(encoding="utf-8"))
     assert summary["n_images"] == 4 and summary["n_fp"] == 1 and summary["n_fn"] == 1
     assert summary["metrics"]["auroc"] == 0.75  # 3/4 positive-negative pairs ranked right
     assert summary["by_generator"]["sd14"]["n_fp"] == 0
+    assert summary["by_generator"]["real"]["n_images"] == 2  # c.png + d.png
     assert (out_dir / "badcase_stats.csv").is_file()
+    # b.png and d.png have no manifest rows; the count is surfaced in the CLI line
+    assert "unmatched_metadata=2" in r.stdout
 
 
 def test_manifest_reader_validates(tmp_path):
@@ -143,6 +208,10 @@ def test_manifest_reader_validates(tmp_path):
     bad.write_text('{"path": "x.png"}\nnot json\n', encoding="utf-8")
     with pytest.raises(SystemExit):
         load_manifest_rows([bad])
+    nonobj = tmp_path / "nonobj.jsonl"
+    nonobj.write_text('["path"]\n', encoding="utf-8")
+    with pytest.raises(SystemExit):  # non-object row would TypeError on m["path"]
+        load_manifest_rows([nonobj])
     empty = tmp_path / "empty.jsonl"
     empty.write_text('{"label": 1}\n', encoding="utf-8")
     with pytest.raises(SystemExit):

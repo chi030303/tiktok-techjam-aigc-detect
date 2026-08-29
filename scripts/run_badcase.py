@@ -113,6 +113,7 @@ def main() -> None:
     print(
         f"split={name} images={summary['n_images']} fp={summary['n_fp']} "
         f"fn={summary['n_fn']} unmatched_labels={res['unmatched_labels']} "
+        f"unmatched_metadata={res['unmatched_metadata']} "
         f"-> {out_dir}/{{badcases.jsonl,badcase_stats.csv,badcase_summary.json}}"
     )
 

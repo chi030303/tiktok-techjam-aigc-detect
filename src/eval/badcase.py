@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 from collections import defaultdict
 from pathlib import Path
 
@@ -25,8 +26,22 @@ from src.eval.score import _lookup_y
 # end
 
 
-def normalize_path(p: str) -> str:
-    return Path(p).as_posix()
+def _resolve_forms(p: Path, bases: list[Path]) -> list[str]:
+    """Canonical absolute forms of ``p``: as-is, then relative to each base.
+
+    resolve() is non-strict, so lexical ``..``/symlink normalization also
+    works for paths that no longer exist on disk. predict.py emits whatever
+    path form the caller passed while build_source stores CWD-relative or
+    absolute paths, so the metadata join must not rely on raw string equality
+    (PR#5 review: absolute pred paths used to silently drop all metadata).
+    """
+    forms = [p.resolve().as_posix()]
+    if not p.is_absolute():
+        for base in bases:
+            form = (base / p).resolve().as_posix()
+            if form not in forms:
+                forms.append(form)
+    return forms
 
 
 def load_manifest_rows(paths: list[Path] | None) -> list[dict]:
@@ -44,8 +59,10 @@ def load_manifest_rows(paths: list[Path] | None) -> list[dict]:
                     row = json.loads(line)
                 except json.JSONDecodeError as exc:
                     raise SystemExit(f"{part}:{lineno}: {exc}")
-                if "path" not in row:
-                    raise SystemExit(f"{part}:{lineno}: manifest row missing 'path'")
+                if not isinstance(row, dict) or "path" not in row:
+                    raise SystemExit(
+                        f"{part}:{lineno}: manifest row must be a JSON object with 'path'"
+                    )
                 rows.append(row)
     return rows
 
@@ -61,20 +78,32 @@ def join_predictions(
 ) -> dict:
     """Join every prediction to its label and optional manifest metadata.
 
+    The label join mirrors ``score._lookup_y`` exactly. The metadata join
+    canonicalizes both sides to absolute forms (raw plus relative to
+    ``src_root`` / ``predict_root``), so a pred JSON written from absolute
+    paths still attaches to a CWD-relative manifest and vice versa; only
+    same-file-different-path-identity cases (hardlinks, mounts) fall through.
+
     Returns ``{"joined", "unmatched_labels", "unmatched_metadata",
     "n_manifest_rows"}``. Each joined row carries ``error_type`` in
-    ``TP / FP / FN / TN`` plus ``condition / generator / source_dataset``
-    (manifest values when available, else ``default_condition`` / ``unknown``).
+    ``TP / FP / FN / TN`` plus ``condition / generator / source_dataset``:
+    ``condition`` is the manifest ``transform_key`` or ``default_condition``,
+    ``generator`` is the manifest value, ``real`` for label-0 images (reals
+    have no generator by definition), else ``unknown``.
     """
+    if not isinstance(preds, list):
+        raise SystemExit("pred JSON must be a list of {image_path, pred}")
     by_rel = index_by_rel(rows, src_root)
+    meta_bases = [src_root, predict_root]
     meta_by_path: dict[str, dict] = {}
     for m in manifest_rows or []:
-        meta_by_path.setdefault(normalize_path(str(m["path"])), m)
+        for form in _resolve_forms(Path(str(m["path"])), meta_bases):
+            meta_by_path.setdefault(form, m)
 
     joined: list[dict] = []
     unmatched_labels = unmatched_meta = 0
     for row in preds:
-        if "image_path" not in row or "pred" not in row:
+        if not isinstance(row, dict) or "image_path" not in row or "pred" not in row:
             raise SystemExit("pred JSON must be a list of {image_path, pred}")
         image_path = str(row["image_path"])
         y = _lookup_y(image_path, predict_root, by_rel)
@@ -82,7 +111,13 @@ def join_predictions(
             unmatched_labels += 1
             continue
         s = float(row["pred"])
-        meta = meta_by_path.get(normalize_path(image_path))
+        if math.isnan(s):
+            raise SystemExit(f"pred for {image_path} is NaN; fix the predictor first")
+        meta = None
+        for form in _resolve_forms(Path(image_path), meta_bases):
+            if form in meta_by_path:
+                meta = meta_by_path[form]
+                break
         if meta is None:
             unmatched_meta += 1
             meta = {}
@@ -98,7 +133,7 @@ def join_predictions(
                 "label": y,
                 "error_type": error_type,
                 "condition": meta.get("transform_key") or default_condition,
-                "generator": meta.get("generator") or "unknown",
+                "generator": meta.get("generator") or ("real" if y == 0 else "unknown"),
                 "source_dataset": meta.get("source_dataset") or "unknown",
             }
         )
@@ -127,12 +162,18 @@ def _group_stats(joined: list[dict], key: str) -> dict:
         n = len(rs)
         n_fp = sum(r["error_type"] == "FP" for r in rs)
         n_fn = sum(r["error_type"] == "FN" for r in rs)
+        n_real = sum(r["label"] == 0 for r in rs)
+        n_fake = n - n_real
         stats[value] = {
             "n_images": n,
+            "n_real": n_real,
+            "n_fake": n_fake,
             "n_fp": n_fp,
             "n_fn": n_fn,
-            "fp_rate": round(n_fp / n, 6),
-            "fn_rate": round(n_fn / n, 6),
+            # Same denominators as src.eval.metrics: fpr over reals only,
+            # fnr over fakes only (max(1, ..) keeps empty halves at 0).
+            "fpr": round(n_fp / max(1, n_real), 6),
+            "fnr": round(n_fn / max(1, n_fake), 6),
         }
     return stats
 
@@ -142,13 +183,18 @@ def summarize(joined: list[dict], threshold: float, worst_k: int = 20) -> dict:
     fps = [r for r in joined if r["error_type"] == "FP"]
     fns = [r for r in joined if r["error_type"] == "FN"]
     n = len(joined)
+    n_fp, n_fn = len(fps), len(fns)
+    n_real = sum(r["label"] == 0 for r in joined)
+    n_fake = n - n_real
     return {
         "threshold": threshold,
         "n_images": n,
-        "n_fp": len(fps),
-        "n_fn": len(fns),
-        "fp_rate": round(len(fps) / n, 6) if n else 0.0,
-        "fn_rate": round(len(fns) / n, 6) if n else 0.0,
+        "n_real": n_real,
+        "n_fake": n_fake,
+        "n_fp": n_fp,
+        "n_fn": n_fn,
+        "fpr": round(n_fp / max(1, n_real), 6),
+        "fnr": round(n_fn / max(1, n_fake), 6),
         "by_condition": _group_stats(joined, "condition"),
         "by_generator": _group_stats(joined, "generator"),
         "by_source_dataset": _group_stats(joined, "source_dataset"),
@@ -166,20 +212,29 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
 
 
 def write_stats_csv(path: Path, summary: dict) -> None:
-    """Flat long-format table: one row per (group_type, group_value)."""
+    """Flat long-format table: one row per (group_type, group_value).
+
+    ``fpr`` / ``fnr`` use the same denominators as ``src.eval.metrics``
+    (FP over reals, FN over fakes) so the CSV lines up with robustness tables.
+    """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
-        w.writerow(["group_type", "group_value", "n_images", "n_fp", "n_fn", "fp_rate", "fn_rate"])
         w.writerow(
-            ["overall", "all", summary["n_images"], summary["n_fp"], summary["n_fn"],
-             summary["fp_rate"], summary["fn_rate"]]
+            ["group_type", "group_value", "n_images", "n_real", "n_fake",
+             "n_fp", "n_fn", "fpr", "fnr"]
+        )
+        w.writerow(
+            ["overall", "all", summary["n_images"], summary["n_real"],
+             summary["n_fake"], summary["n_fp"], summary["n_fn"],
+             summary["fpr"], summary["fnr"]]
         )
         for group_type in ("by_condition", "by_generator", "by_source_dataset"):
             for value, st in summary[group_type].items():
                 w.writerow(
                     [group_type.removeprefix("by_"), value, st["n_images"],
-                     st["n_fp"], st["n_fn"], st["fp_rate"], st["fn_rate"]]
+                     st["n_real"], st["n_fake"], st["n_fp"], st["n_fn"],
+                     st["fpr"], st["fnr"]]
                 )
 # end
