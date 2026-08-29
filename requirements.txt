@@ -1,4 +1,6 @@
 pytest>=8.0
+numpy>=1.26
+pillow>=10.0
 # 2026-08-29, tianqi, needed by download_backbones.py / download_official_val.py
 huggingface_hub>=0.26
 modelscope>=1.20

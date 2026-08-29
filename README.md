@@ -26,6 +26,20 @@ python predict.py ./fixtures/sample_images ./outputs/pred.json
 bash scripts/check.sh
 ```
 
+## Transforms (src/transforms/)
+
+Official 6 robustness transforms: **14 frozen eval settings + clean = 15 conditions**. Field tables, ambiguity decisions and seed rules: [docs/transforms.md](docs/transforms.md).
+
+```bash
+# folder tree -> source manifest (labels from parent dir names; DO_NOT_TRAIN trees refused as --split train)
+python -m src.transforms.build_source --root data/val --dataset demo_wildfake --split val --out data/manifests/source_demo_val.jsonl
+
+# source manifest -> frozen transformed eval set (default splits: val,test,unseen; rerunnable/idempotent)
+python -m src.transforms.build --source-manifest data/manifests/source_demo_val.jsonl --out-manifest data/manifests/transforms_eval.jsonl
+```
+
+Training-time random augmentation (official grids by default): `from src.transforms.augment import random_augment` → `img, info = random_augment(img, rng, p_clean=0.2)`.
+
 ## Download data and models (not in git)
 
 Full rules: [docs/data.md](docs/data.md). Demo set **must not** be used for training.
