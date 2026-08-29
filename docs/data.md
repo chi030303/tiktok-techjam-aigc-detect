@@ -60,7 +60,7 @@ python scripts/download_backbones.py             # CLIP-B/16, CLIP-L/14, ResNet-
 # 已有 pred.json：对标签打分（acc / AUROC / FPR / FP·FN）
 python scripts/run_eval.py score --pred outputs/pred.json --split official_val
 
-# 日常粗表（clean vs JPEG-50 vs center-crop 80%），先用子集
+# 日常粗表（clean vs JPEG-50 vs crop 80%），先用子集
 python scripts/run_eval.py robustness --split official_val --conditions daily --max-images 400 --ckpt checkpoints/best.pt
 
 # 提交用的全档位表（题面全部 JPEG / blur / resize / noise / jitter / crop）
@@ -70,7 +70,9 @@ python scripts/run_eval.py robustness --split official_val --conditions full --c
 python scripts/run_eval.py materialize --split official_val --conditions daily --max-images 400
 ```
 
-`--conditions daily` = `clean,jpeg_q50,center_crop_80`（[ops.md](ops.md) 每天那张粗表）。`--conditions full` = 题面全部档位。表写到 `outputs/tables/*.csv`（可进 git）和 `*.md`。EvalGEN 几乎全是假图，AUROC 会是空的，看 recall / mean_pred。
+# 2026-08-29, tianqi, eval condition names now match src/transforms/spec.py
+`--conditions daily` = `clean,jpeg_q50,crop_p80`（[ops.md](ops.md) 每天那张粗表）。`--conditions full` = clean + 官方 14 档（`docs/transforms.md`）。像素算子和种子以 `src/transforms` 为准，不要再用 `center_crop_80` / `jitter_m20`。表写到 `outputs/tables/*.csv`（可进 git）和 `*.md`。EvalGEN 几乎全是假图，AUROC 会是空的，看 recall / mean_pred。
+# end
 <!-- end -->
 
 ## 权重

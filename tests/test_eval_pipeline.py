@@ -90,6 +90,9 @@ def test_robustness_table_via_injected_predict(tmp_path: Path) -> None:
     text = csv_path.read_text(encoding="utf-8")
     assert "jpeg_q50" in text and "acc" in text
     assert "center_crop_80" not in text
+    # 2026-08-29, tianqi, spec key crop_p80 is the daily crop name now
+    assert "crop_p80" not in text
+    # end
     assert md_path.read_text(encoding="utf-8").startswith("| model")
 
 
