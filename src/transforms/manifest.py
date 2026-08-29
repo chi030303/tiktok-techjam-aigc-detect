@@ -24,6 +24,10 @@ SPLITS = ("train", "val", "test", "unseen")
 class _Record:
     @classmethod
     def from_dict(cls, row: dict):
+        if not isinstance(row, dict):
+            raise ValueError(
+                f"{cls.__name__}: expected a JSON object per line, got {type(row).__name__}"
+            )
         known = {f.name for f in fields(cls)}
         missing = sorted(known - row.keys())
         unknown = sorted(row.keys() - known)
@@ -43,12 +47,21 @@ class _Record:
 
 
 def _check_common(rec, cls_name: str) -> None:
-    if rec.label not in (0, 1):
-        raise ValueError(f"{cls_name}: label must be 0 or 1, got {rec.label!r}")
+    # bool is an int subclass; reject it explicitly so label=True/False fails.
+    if isinstance(rec.label, bool) or not isinstance(rec.label, int) or rec.label not in (0, 1):
+        raise ValueError(f"{cls_name}: label must be int 0 or 1, got {rec.label!r}")
     if rec.split not in SPLITS:
         raise ValueError(f"{cls_name}: split must be one of {SPLITS}, got {rec.split!r}")
     if not rec.path:
         raise ValueError(f"{cls_name}: path must be non-empty")
+    _check_size(rec, cls_name)
+
+
+def _check_size(rec, cls_name: str) -> None:
+    for name in ("width", "height"):
+        value = getattr(rec, name)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ValueError(f"{cls_name}: {name} must be a positive int, got {value!r}")
 
 
 @dataclass
@@ -95,7 +108,7 @@ class TransformRecord(_Record):
             )
         if not isinstance(self.params, dict) or not self.params:
             raise ValueError("TransformRecord: params must be a non-empty dict")
-        if not isinstance(self.seed, int) or self.seed < 0:
+        if isinstance(self.seed, bool) or not isinstance(self.seed, int) or self.seed < 0:
             raise ValueError(f"TransformRecord: bad seed {self.seed!r}")
 
 

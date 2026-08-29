@@ -72,7 +72,7 @@ def test_seed_derivation_stable_and_distinct():
     assert spec.derive_seed("img1", "jpeg_q50") == spec.derive_seed("img1", "jpeg_q50")
     assert spec.derive_seed("img1", "jpeg_q50") != spec.derive_seed("img2", "jpeg_q50")
     assert spec.derive_seed("img1", "jpeg_q50") != spec.derive_seed("img1", "jpeg_q30")
-    assert 0 <= spec.derive_seed("img1", "jpeg_q50") < 2**64
+    assert 0 <= spec.derive_seed("img1", "jpeg_q50") < 2**56
 
 
 def test_size_contract():
@@ -128,6 +128,14 @@ def test_manifest_schema_strict():
         SourceRecord.from_dict({**source_row(), "oops": 1})
     with pytest.raises(ValueError):
         SourceRecord.from_dict({k: v for k, v in source_row().items() if k != "split"})
+    with pytest.raises(ValueError):
+        SourceRecord.from_dict(source_row(label=0.0))  # float label
+    with pytest.raises(ValueError):
+        SourceRecord.from_dict(source_row(label=True))  # bool is an int subclass
+    with pytest.raises(ValueError):
+        SourceRecord.from_dict(source_row(width=32.5))  # float size
+    with pytest.raises(ValueError):
+        SourceRecord.from_dict(source_row(height=0))
 
     trow = {
         "row_id": "a_jpeg_q50",
@@ -150,6 +158,16 @@ def test_manifest_schema_strict():
         TransformRecord.from_dict({**trow, "transform_key": "jpeg_q66"})
     with pytest.raises(ValueError):
         TransformRecord.from_dict({**trow, "params": {}})
+    with pytest.raises(ValueError):
+        TransformRecord.from_dict({**trow, "seed": True})
+
+
+def test_read_jsonl_rejects_non_object_lines(tmp_path):
+    """A non-object JSONL row must fail with the clean path:lineno error."""
+    bad = tmp_path / "bad.jsonl"
+    bad.write_text('[1, 2, 3]\n', encoding="utf-8")
+    with pytest.raises(SystemExit, match="bad.jsonl:1"):
+        read_jsonl(bad, "source")
 
 
 def test_do_not_train_guard(tmp_path):
@@ -216,6 +234,8 @@ def test_run_build_split_filter(tmp_path):
         )
     with pytest.raises(SystemExit):
         run_build([], spec.resolve_settings("blur_s10"), tmp_path / "t", tmp_path / "m.jsonl")
+
+
 def test_collect_records_allows_holdout_indexing(tmp_path, capsys):
     """DO_NOT_TRAIN forbids training, not evaluation: non-train indexing passes."""
     root = tmp_path / "val"

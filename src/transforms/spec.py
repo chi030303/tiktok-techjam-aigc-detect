@@ -58,9 +58,10 @@ def resolve_settings(keys: str) -> list[Setting]:
 def derive_seed(image_id: str, transform_key: str) -> int:
     """Stable per-(image, setting) seed: same inputs -> byte-identical outputs.
 
-    Bump the salt suffix (v1 -> v2) whenever spec parameters change so old
-    eval sets are never silently mixed with new ones.
+    Bump the salt suffix (v2 -> v3) whenever spec parameters change so old
+    eval sets are never silently mixed with new ones. 7 bytes (56 bits) keeps
+    every seed inside signed int64 so pandas / SQL consumers cannot overflow.
     """
-    digest = hashlib.sha1(f"{image_id}|{transform_key}|v1".encode("utf-8")).digest()
-    return int.from_bytes(digest[:8], "big")
+    digest = hashlib.sha1(f"{image_id}|{transform_key}|v2".encode("utf-8")).digest()
+    return int.from_bytes(digest[:7], "big")
 # end
