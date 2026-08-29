@@ -6,8 +6,10 @@ Examples:
 
     python scripts/run_eval.py score --pred outputs/pred.json --split official_val
     python scripts/run_eval.py robustness --split official_val --conditions daily --max-images 400
-    python scripts/run_eval.py materialize --split official_val --conditions jpeg_q50,center_crop_80
+    python scripts/run_eval.py materialize --split official_val --conditions jpeg_q50,crop_p80
 """
+# 2026-08-29, tianqi, materialize example uses spec key crop_p80
+# end
 
 from __future__ import annotations
 

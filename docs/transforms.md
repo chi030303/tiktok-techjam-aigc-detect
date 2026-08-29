@@ -4,6 +4,11 @@
 > schema 以本文件 + `src/transforms/spec.py` 为准，改动需同步两处。官方演示集
 > `data/val/`（COCO val2017 + DALL·E Advanced）带 `DO_NOT_TRAIN` 标记：作
 > `--split train` 索引会被拒绝，评测索引放行（见 [data.md](data.md)）。
+>
+> <!-- 2026-08-29, tianqi, eval is an adapter, not a second op implementation -->
+> 评测 `src/eval/transforms.py` 只做薄封装：条件名、种子、像素都走 spec/ops。
+> jitter 用一档独立采样 ±20%（方案 A），没有 `jitter_m20`。
+> <!-- end -->
 
 ## 1. 官方档位（冻结，勿改参数）
 
