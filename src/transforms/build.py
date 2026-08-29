@@ -143,7 +143,13 @@ def main() -> None:
         default="val,test,unseen",
         help="source splits to transform; schema names only, train excluded by default",
     )
-    parser.add_argument("--limit-per-setting", type=int, default=0)
+    parser.add_argument(
+        "--limit-per-setting",
+        type=int,
+        default=0,
+        help="first N source rows per setting after split filtering (may be "
+        "label-skewed; smoke only, not a balanced eval set)",
+    )
     parser.add_argument(
         "--crop-resize-back",
         action="store_true",

@@ -21,7 +21,8 @@
 - 建议评估口径（与评测侧对齐）：**robust AUC = 14 个变换档位 AUC 的宏平均**，clean 单列。
 - 实现：Pillow + NumPy。JPEG 用 PIL 重编码（默认 4:2:0 色度子采样）；blur 用
   `ImageFilter.GaussianBlur`（其 radius 即 σ）；noise 加在 [0,1] 浮点像素上再截断回
-  uint8；jitter 用 `ImageEnhance.Brightness/Contrast/Color` 串联（顺序：亮度→对比度→饱和度）。
+  uint8；jitter 用 `ImageEnhance.Brightness/Contrast/Color` 串联（顺序：亮度→对比度→饱和度）；
+  resize 双向与 crop 的 `--crop-resize-back` 均用双线性插值（`Resampling.BILINEAR`）。
 
 ## 2. 题面歧义的处理决策
 
@@ -37,11 +38,13 @@
 ## 3. 复现性（种子规则）
 
 ```
-seed = sha1("{image_id}|{transform_key}|v1") 的前 8 字节（大端整数）
+seed = sha1("{image_id}|{transform_key}|v2") 的前 7 字节（56 位大端整数，恒为非负且在带符号 int64 内，下游 pandas/SQL 不会溢出）
 ```
 
-同一份 source manifest + 同一 spec 版本，任何人任何机器重建都得到**逐字节相同**
-的评测集。spec 参数若变更，把盐 `v1` 升 `v2` 并在本文件记录变更原因。
+同一份 source manifest + 同一 spec 版本 + **相同版本的 numpy/Pillow**，任何人任何
+机器重建都得到**逐字节相同**的评测集。JPEG 档位的编码字节随 Pillow 打包的 libjpeg
+版本可能不同，跨机器/跨版本重建前先固定依赖版本。spec 参数或种子规则若变更，把盐
+`v2` 升 `v3` 并在本文件记录变更原因。
 
 ## 4. 目录布局
 
@@ -114,6 +117,10 @@ python -m src.transforms.build \
 
 `build_source` 常用参数：`--generator flux1-dev`、`--label 1`（强制整树标签，
 Flux 出图用）、`--hash-content`（跨数据集去重时用内容哈希）。
+
+注意 `--limit-per-setting` 取的是 split 过滤后的**前 N 行**（CIFAKE 目录按
+REAL/FAKE 分层排列，冒烟集可能只有单一标签）——它只用于快速冒烟，不要把
+冒烟产物当评估集用；全量构建不用这个参数。
 
 ## 7. 与训练 / 评估的接口
 
