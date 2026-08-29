@@ -114,9 +114,20 @@ Flux 出图用）、`--hash-content`（跨数据集去重时用内容哈希）�
 
 - **评估侧**：从 `transforms_eval.jsonl` 取 14 个档位条件、从 source manifest 取
   clean 条件，逐条件算 AUC；bad case 按 `transform_key × generator × label` 落 JSONL。
-- **训练侧**：**不要预生成训练增强**——直接 `from src.transforms import ops` 在线
-  采样同范围参数（官方档位 = 参数网格的两端与中点）；真/假图都要加增强，避免
-  "真=有损、假=无损" 的捷径（data.md 同款提醒）。
+- **训练侧**：**不要预生成训练增强**——用 `random_augment` 在线随机施加（官方要求
+  "apply these randomly during training, they simulate the real-world
+  redistribution pipeline"）：
+
+  ```python
+  from src.transforms.augment import random_augment
+  img, info = random_augment(img, rng, p_clean=0.2)  # info 记录实际施加的 op/参数
+  ```
+
+  默认在官方离散档位里随机（与评测网格同分布），`continuous=True` 改为范围内
+  连续采样；`p_clean` 保留一部分无变换样本；`op_weights` 可对 6 类算子重新配比；
+  `chain_jpeg_p` 可在任意变换后追加一次随机质量 JPEG 重编码（更贴近社媒再压缩
+  管线，默认关闭）。真/假图都要加增强，避免 "真=有损、假=无损" 的捷径
+  （data.md 同款提醒）。增强在**原生分辨率**上做，模型侧 resize 放在它之后。
 - **数据侧**：source manifest 是唯一入口，选数据的同学按第 5 节字段产出即可接入。
 
 ## 8. 数据集落库注意（给选数据的同学）
