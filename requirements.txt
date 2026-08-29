@@ -1,1 +1,7 @@
 pytest>=8.0
+# 2026-08-29, tianqi, needed by download_backbones.py / download_official_val.py
+huggingface_hub>=0.26
+modelscope>=1.20
+# 2026-08-29, tianqi, experiment recipes
+pyyaml>=6.0
+# end

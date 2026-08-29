@@ -2,4 +2,6 @@
 
 → [docs/SOP-git.md](docs/SOP-git.md)
 
+上机（tmux / venv / 显卡）：[docs/dev.md](docs/dev.md)
+
 数据不进仓：[docs/data.md](docs/data.md)

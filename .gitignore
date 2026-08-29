@@ -28,6 +28,11 @@ models/**
 !models/.gitkeep
 outputs/**
 !outputs/.gitkeep
+# 2026-08-29, tianqi, keep recipes; drop per-run artifacts
+experiments/**/runs/
+experiments/**/ckpts/
+experiments/**/logs/
+# end
 runs/
 wandb/
 lightning_logs/
