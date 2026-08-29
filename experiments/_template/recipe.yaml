@@ -1,0 +1,39 @@
+# 2026-08-29, tianqi, copy this folder to experiments/<name>/ and edit
+name: _template
+description: Copy to experiments/<short-name>/ and fill in. One recipe = one experiment.
+owner: who
+
+# backbone folder under MODELS_ROOT (shared, not in your git clone)
+backbone: clip-vit-base-patch16
+head: linear
+freeze_backbone: true
+
+train:
+  datasets:
+    - sid_set
+  # loader must never scan these even if listed by mistake
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - official_val
+  - evalgen
+
+aug:
+  jpeg: true
+  blur: true
+  resize: true
+  noise: true
+  jitter: true
+  center_crop: true
+
+optim:
+  epochs: 3
+  batch_size: 128
+  lr: 0.001
+
+# CUDA_VISIBLE_DEVICES; Vast: 0 = Flux, 1 = train
+gpu: "1"
+# end

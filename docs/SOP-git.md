@@ -1,8 +1,12 @@
 # SOP：GitHub 分支工作流
 
-每人在自己的分支上干活，**本地 `bash scripts/check.sh` 通过后再开 PR 合进 `main`。** `main` 必须随时能跑 `predict.py`。
+<!-- 2026-08-29, tianqi, personal-branch-first; kiki merges main -->
+默认：**尽量长时间待在自己的分支上开发。** 日常修改只 commit / push 到个人 `feat/<who>-...`，**不要直接改 `main`。** 一整块功能在自己分支上测通（`bash scripts/check.sh` + 你负责的那部分能跑）之后再开 PR，由 **kiki（仓库 owner）合进 `main`。**
 
-不要把数据、权重、`.env` 推进 GitHub。
+`main` 必须随时能跑 `predict.py`。不要把数据、权重、`.env` 推进 GitHub。
+
+机器上的 tmux / venv / 显卡：[dev.md](dev.md)。
+<!-- end -->
 
 ## 0. 第一次（每人做一次）
 
@@ -42,21 +46,45 @@ git checkout -b feat/<who>-<thing>
 规则：
 
 - 一律从 **最新 `main`** 开分支，不要从别人的 `feat/` 再开。
-- 一人一条活分支；做完就合，**不要隔夜囤 PR**。
+- 一人可以同时有 1～2 条活分支（例如训练一条、文档一条），但同一文件不要两条分支一起改。
+- **日常工作都留在个人分支**：写完就 `commit` + `push` 到自己的 remote 分支，避免只存在笔记本上。
 - 禁止 `git push --force` 到 `main`。只有没人用过的自己的分支才能 force。
 - 72 小时内用 **merge**，不要 rebase。
+- 每天至少一次：`git fetch origin && git merge origin/main` 进你的分支，避免最后 PR 爆冲突。
 
-## 2. 小步提交
+<!-- 2026-08-29, tianqi, when to PR vs stay on branch -->
+开 PR 的时机：**一块完整功能**测完，而不是每一个 typo。例如「JPEG 增强 + 能出一张表」可以一个 PR；不要把三天的训练+评测+视频捆成一个巨型 PR。功能已经能跑就提，**不要隔夜囤着已经测完的代码**。
+<!-- end -->
+
+## 2. 小步提交（都提交到个人分支）
 
 ```bash
 git add <files>
-git commit -m "train: add jpeg quality sampler"
+git commit -m "feat: add jpeg quality sampler"
 git push -u origin HEAD
 ```
 
-前缀：`train:` `eval:` `infer:` `docs:` `data:` `chore:`
+<!-- 2026-08-29, tianqi, commit types are feat/fix/docs/chore/debug not train/data -->
+前缀用 **类型**，不要用模块名：
+
+| 前缀 | 何时 |
+|---|---|
+| `feat:` | 新功能（下载脚本、recipe、训练循环） |
+| `fix:` | 修 bug |
+| `docs:` | 只改文档 |
+| `chore:` | 依赖、gitignore、检查脚本、杂务 |
+| `debug:` | 临时排查，合 `main` 前尽量清掉 |
+
+分支名仍是 `feat/<who>-<thing>`，和 commit 前缀不是一回事。
+<!-- end -->
 
 一次提交只做一类事。不要把训练脚本和 README 和视频脚本捆在一起。
+
+**大改动必须带注释和文档（自己写或 AI 写都可以，但要进同一个 PR）：**
+
+- 代码：改动处附近用简短注释说明 *为什么*（尤其是增强参数、阈值、路径约定）
+- 文档：更新 `docs/data.md` / `README` / 评测说明里对应小节，别等交稿前一次性补
+- PR 描述写清：改了什么、怎么测的、组员需要知道的新命令
 
 ## 3. 合入 main 之前必须过的检查
 
@@ -76,14 +104,14 @@ bash scripts/check.sh
 
 **检查不过：不准开 PR。** 自己修到绿。
 
-## 4. 开 PR → 合并
+## 4. 开 PR → 由 kiki 合进 main
+
+个人分支上可以有很多 commit；**一个 PR = 一块已测完的功能**，不是每个 commit 都开 PR。
 
 1. GitHub 开 Pull request：`feat/...` → `main`
-2. 用默认模板填：改了什么、怎么测的、有没有动 `predict.py` schema
-3. 指定 reviewer：
-   - 动 `predict.py` / 训练入口 → 技术负责人 Approve
-   - 评测表 / 文档 → 产品或风控看一眼即可
-4. 讨论里说一声；**Approve 后再按 Merge**（Create a merge commit）
+2. 用默认模板填：改了什么、怎么测的、有没有动 `predict.py` schema；大改动附上文档/注释位置
+3. Assignee / reviewer：指定 **kiki**（`chi030303`）合并
+4. 群里说一声；**只有 kiki 按 Merge**（Create a merge commit）。其他人不要自己合 `main`
 5. 合完：GitHub 删远程分支；本地：
 
 ```bash
@@ -91,6 +119,8 @@ git checkout main
 git pull origin main
 git branch -d feat/<who>-<thing>
 ```
+
+然后若还有下一件活：再从最新 `main` 开新的 `feat/<who>-<next>`。
 
 冲突：以 **脚本** 为准。不要手合 `.pth`。权重文件直接丢，重新导出。
 
@@ -119,6 +149,8 @@ git push origin v2-submit
 
 ## 7. 不要做
 
-- 直接在 `main` 上 commit（热修也先开 `hotfix/<who>-<thing>` 再 PR）
+- 直接在 `main` 上 commit（热修也先开 `hotfix/<who>-<thing>` 再 PR，仍由 kiki 合）
 - 把 SID_Set / 演示集 / Flux 出图推进 GitHub
 - 用 fork（本队全部 Collaborator，同一仓库）
+- 用微信传 `.py` 当主同步方式（必须在个人分支上，别人才能 PR）
+- 等「全部做完」再提一个巨型 PR（按功能切片提）
