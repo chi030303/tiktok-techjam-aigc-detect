@@ -26,6 +26,20 @@ python predict.py ./fixtures/sample_images ./outputs/pred.json
 bash scripts/check.sh
 ```
 
+## Transforms (src/transforms/)
+
+Official 6 robustness transforms: **14 frozen eval settings + clean = 15 conditions**. Field tables, ambiguity decisions and seed rules: [docs/transforms.md](docs/transforms.md).
+
+```bash
+# folder tree -> source manifest (labels from parent dir names; refuses DO_NOT_TRAIN trees)
+python -m src.transforms.build_source --root data/cifake/train --dataset cifake --split train --out data/manifests/source_cifake_train.jsonl
+
+# source manifest -> frozen transformed eval set (14 settings, train excluded, rerunnable/idempotent)
+python -m src.transforms.build --source-manifest data/manifests/source_cifake_train.jsonl --out-manifest data/manifests/transforms_eval.jsonl
+```
+
+Training-time random augmentation (official grids by default): `from src.transforms.augment import random_augment` → `img, info = random_augment(img, rng, p_clean=0.2)`.
+
 ## Download data and models (not in git)
 
 Full rules: [docs/data.md](docs/data.md). Demo set **must not** be used for training.
