@@ -2,13 +2,35 @@
 
 官方没有计分测试集。我们自己训、自己做变换表；主办方可能拿私有图跑 `predict.py`。
 
+## 共享盘 vs 个人 clone（Vast）
+
+图和骨干只放一份，不要拷进 `/workspace/<who>/`：
+
+| 路径 | 内容 |
+|---|---|
+| `/workspace/data` | `sid_set` / `cifake` / `val` / `evalgen` |
+| `/workspace/models` | CLIP / ResNet / DINOv2 |
+| `/workspace/experiments` | 各实验的 ckpt、log（按实验名） |
+| `/workspace/<who>/tiktok-techjam-aigc-detect` | 代码 + `experiments/<name>/recipe.yaml` |
+
+`DATA_ROOT` / `MODELS_ROOT` / `EXP_ROOT` 见 `.env.example`。新实验：复制 `experiments/_template/`，改名，写 `recipe.yaml`，然后 `python scripts/run_experiment.py experiments/<name>/recipe.yaml`。
+
 ## 禁止训练
 
 | 集合 | 内容 | 本地路径 |
 |---|---|---|
-| 演示验证集 | COCO val2017 4998 真图 + DALL·E Advanced 8843 假图 | `data/demo_wildfake/` |
+# 2026-08-29, tianqi, official demo val path is data/val not demo_wildfake
+| 演示验证集（题面） | COCO val2017 ~4998 真图 + DALL·E Advanced 8843 假图 | `data/val/`（`real/` + `fake/`） |
+# end
+| EvalGEN | Flux / GoT / Infinity / OmniGen / NOVA，约 5.5 万张 | `data/evalgen/` |
 
-该集合 **不算分**，只用来看迭代、出 robustness 表、录 demo。目录内放空文件 `DO_NOT_TRAIN`。训练 loader 不得扫描此路径。
+`data/val` **就是题面那份 Demonstration 集**：不算分、只用来看迭代和 robustness 表。**不是** 主办方隐藏打分测试集。目录内 `DO_NOT_TRAIN`。训练 loader 不得扫描 `data/val/`、`data/evalgen/`、`data/demo_wildfake/`。
+
+```bash
+python scripts/download_official_val.py          # -> data/val  or /workspace/data/val
+python scripts/download_evalgen.py              # extra hold-out, not official val
+python scripts/download_backbones.py             # CLIP-B/16, CLIP-L/14, ResNet-50, DINOv2-L/14
+```
 
 ## 建议训练 / 冒烟
 

@@ -10,7 +10,7 @@
 ## Schema
 
 - [ ] 未改 `predict.py` 的 `image_path` / `pred`
-- [ ] 若改了：标题含 `infer:`，并说明兼容方式
+- [ ] 若改了：说明兼容方式，并让 kiki Approve
 
 ## 演示集
 

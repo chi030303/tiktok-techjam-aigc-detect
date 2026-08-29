@@ -1,23 +1,32 @@
-# GPU：校园卡 vs Vast
+# GPU：Vast
 
-检测器（CLIP 头 / ResNet-50）单张 **24GB 4090 足够**。不必为训练租 A100。
+<!-- 2026-08-29, tianqi, team GPU is Vast only; campus A100 not in team docs -->
+组里训练 / 评测只走这台 Vast。日常怎么连、tmux、venv、占卡：[dev.md](dev.md)。
+<!-- end -->
 
-## 校园 A100
+检测器（CLIP 头 / ResNet-50）单张 **24GB 4090 足够**。
 
-- 账号 **不要把密码发给组员**（学校/超算协议通常禁止转借）。
-- 同一账号往往能多人 SSH，但 **GPU 配额只有一份**：同一时刻只跑一个训练 job。
-- 组员改代码走 GitHub；由账号本人 `sbatch` / 启动训练。
+## 这台机
 
-## Vast.ai（插队、并行选型）
+- 2× RTX 4090。双卡用来 **两件事并行**（例如 GPU0 出图 / GPU1 训练），不是把一个 CLIP 训快一倍。
+- 选 **On-Demand**，不要 Interruptible（中断会丢本地盘）。
+- Container = **系统盘**（镜像里的 PyTorch），不是内存。数据一律放 Volume：`/workspace`。
+- Flux 只可作少量补充样本，不要当主数据。Flux 和训练 **不要同时占一张卡**。
+- Checkpoint 很小，优先从 `/workspace/experiments/<name>/` 拷出来。实例不用了再 Destroy。
 
-- 选 **On-Demand**，不要 Interruptible（中断会丢本地盘，传文件更烦）。
-- Container = **磁盘**（建议 64GB），不是内存。RAM 看机器卡片（建议 ≥32GB，Flux 同机建议 64GB）。
-- Volume：只训公开数据 100–200GB；还要存 Flux 出图则 300GB+。
-- 1×4090 训检测器。双卡 **不是** 把 CLIP 训快一倍，而是 GPU0 出图 / GPU1 训练。
-- Flux 只可作少量补充样本，不要当主数据。Flux 和训练 **不要同时占一张 24GB 卡**。
-- 训完 Destroy。Checkpoint 很小，优先 `scp` 出来而不是实例开满 75 小时。
+<!-- 2026-08-29, tianqi, shared volume layout; personal clones are code-only -->
+## 目录
+
+```text
+/workspace/data/           共享图
+/workspace/models/         共享骨干
+/workspace/experiments/    共享跑出来的 ckpt（按 recipe name）
+/workspace/<who>/...       个人 git clone，不要在这里再下一份 SID/CLIP
+```
+<!-- end -->
 
 ## 约定
 
-- 群里同步：「谁在占用哪张卡 / 哪个 Vast instance」。
-- 作业写成可断点（ckpt），PSB 排队不稳时用短 job。
+- 群里同步：「谁在占用 GPU0 / GPU1」。
+- 开训前：`CUDA_VISIBLE_DEVICES=<0或1>`，`nvidia-smi` 看显存；细则见 [dev.md](dev.md)。
+- 作业写成可断点（ckpt）。
