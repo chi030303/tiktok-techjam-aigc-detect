@@ -2,8 +2,8 @@
 
 > Owner：数据变换（feat/data-transforms 分支）。变换算子、档位参数、manifest
 > schema 以本文件 + `src/transforms/spec.py` 为准，改动需同步两处。官方演示集
-> （COCO val2017 + DALL·E Advanced）带 `DO_NOT_TRAIN` 标记，`build_source` 会
-> 拒绝索引（见 [data.md](data.md)）。
+> `data/val/`（COCO val2017 + DALL·E Advanced）带 `DO_NOT_TRAIN` 标记：作
+> `--split train` 索引会被拒绝，评测索引放行（见 [data.md](data.md)）。
 
 ## 1. 官方档位（冻结，勿改参数）
 
@@ -90,20 +90,25 @@ data/
 # 0) 一次性环境
 python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
 
-# 1) 目录树 → source manifest（CIFAKE 冒烟，label 按父目录 REAL/FAKE）
-python -m src.transforms.build_source --root data/cifake/train \
-  --dataset cifake --split train \
-  --out data/manifests/source_cifake_train.jsonl
+# 1) 目录树 → source manifest（label 按父目录；官方演示集按 real/fake 命名即可）
+python -m src.transforms.build_source --root data/cifake/test \
+  --dataset cifake --split test \
+  --out data/manifests/source_cifake_test.jsonl
 
-# 2) 冒烟：2 个档位 × 每档 200 张（splits 默认排除 train）
+# 1b) 官方演示集（带 DO_NOT_TRAIN）：评测索引放行，作 train 会被拒绝
+python -m src.transforms.build_source --root data/val \
+  --dataset demo_wildfake --split val \
+  --out data/manifests/source_demo_val.jsonl
+
+# 2) 冒烟：2 个档位 × 每档 200 张（CLI 默认 splits=val,test,unseen，train 不参与）
 python -m src.transforms.build \
-  --source-manifest data/manifests/source_cifake_train.jsonl \
+  --source-manifest data/manifests/source_cifake_test.jsonl \
   --out-manifest data/manifests/transforms_eval.jsonl \
-  --settings blur_s10,jpeg_q50 --splits test --limit-per-setting 200
+  --settings blur_s10,jpeg_q50 --limit-per-setting 200
 
-# 3) 全量：14 档位 × eval/test/unseen 全部 source（同种子 ⇒ 逐字节可复现）
+# 3) 全量：14 档位 × 默认 splits 全部 source（同种子 ⇒ 逐字节可复现）
 python -m src.transforms.build \
-  --source-manifest data/manifests/source_eval.jsonl \
+  --source-manifest data/manifests/source_demo_val.jsonl,data/manifests/source_cifake_test.jsonl \
   --out-manifest data/manifests/transforms_eval.jsonl
 ```
 
@@ -139,5 +144,6 @@ Flux 出图用）、`--hash-content`（跨数据集去重时用内容哈希）�
   图片文件再入库，别全量拉。
 - **Flux 产物**：`--dataset flux_gen --split unseen`，目录与训练数据物理分开；是否
   拿少量当补充训练集由算法侧决定（data.md：可补充，不可当主训练集）。
-- **演示集**（COCO val2017 + DALL·E Advanced）：带 `DO_NOT_TRAIN`，本工具拒绝索引，
-  训练 loader 也不得扫描。
+- **演示集** `data/val/`（COCO val2017 + DALL·E Advanced）：带 `DO_NOT_TRAIN`——
+  当 `--split train` 索引会被拒绝；评测索引（其他 split）放行并打印 stderr 提示。
+  该目录绝不能用于训练，训练 loader 也不得扫描。

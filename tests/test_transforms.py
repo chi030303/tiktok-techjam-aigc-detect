@@ -1,10 +1,14 @@
 # 2026-08-29, zyun, tests for transform ops, manifest schema, and both builders
 import io
+import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
 import pytest
 from PIL import Image
+
+ROOT = Path(__file__).resolve().parents[1]
 
 from src.transforms import ops, spec
 from src.transforms.build import run_build
@@ -212,4 +216,79 @@ def test_run_build_split_filter(tmp_path):
         )
     with pytest.raises(SystemExit):
         run_build([], spec.resolve_settings("blur_s10"), tmp_path / "t", tmp_path / "m.jsonl")
+def test_collect_records_allows_holdout_indexing(tmp_path, capsys):
+    """DO_NOT_TRAIN forbids training, not evaluation: non-train indexing passes."""
+    root = tmp_path / "val"
+    (root / "real").mkdir(parents=True)
+    (root / "fake").mkdir(parents=True)
+    (root / "DO_NOT_TRAIN").touch()
+    make_image(seed=1).save(root / "real" / "a.png")
+    make_image(seed=2).save(root / "fake" / "b.png")
+    records = collect_records(root=root, dataset="demo_wildfake", split="val")
+    assert sorted(r.label for r in records) == [0, 1]  # one real, one fake
+    assert "DO_NOT_TRAIN" in capsys.readouterr().err  # notice printed
+
+
+def test_collect_records_refuses_train_on_marked_tree(tmp_path):
+    root = tmp_path / "val"
+    (root / "real").mkdir(parents=True)
+    (root / "DO_NOT_TRAIN").touch()
+    make_image().save(root / "real" / "a.png")
+    with pytest.raises(SystemExit):
+        collect_records(root=root, dataset="demo_wildfake", split="train")
+
+
+def _run_cli(module_args: list[str]):
+    return subprocess.run(
+        [sys.executable, "-m", *module_args], capture_output=True, text=True, cwd=ROOT
+    )
+
+
+def test_cli_defaults_match_documented_flow(tmp_path):
+    """The README flow must run with CLI default args (review #1)."""
+    root = tmp_path / "cifake" / "test"
+    (root / "FAKE").mkdir(parents=True)
+    (root / "REAL").mkdir(parents=True)
+    make_image(seed=1).save(root / "FAKE" / "a.png")
+    make_image(seed=2).save(root / "REAL" / "b.png")
+
+    r1 = _run_cli([
+        "src.transforms.build_source", "--root", str(root),
+        "--dataset", "cifake", "--split", "test",
+        "--out", str(tmp_path / "source.jsonl"),
+    ])
+    assert r1.returncode == 0, r1.stderr
+
+    r2 = _run_cli([
+        "src.transforms.build",
+        "--source-manifest", str(tmp_path / "source.jsonl"),
+        "--out-manifest", str(tmp_path / "t.jsonl"),
+        "--out-root", str(tmp_path / "tr"),
+    ])
+    assert r2.returncode == 0, r2.stderr
+    rows = (tmp_path / "t.jsonl").read_text().splitlines()
+    assert len(rows) == 2 * len(spec.OFFICIAL_SETTINGS)  # all 14 settings applied
+
+
+def test_cli_default_excludes_train_source(tmp_path):
+    """A train-only source must fail under CLI default splits (review #1/#2)."""
+    root = tmp_path / "cifake" / "train"
+    (root / "FAKE").mkdir(parents=True)
+    make_image().save(root / "FAKE" / "a.png")
+
+    r1 = _run_cli([
+        "src.transforms.build_source", "--root", str(root),
+        "--dataset", "cifake", "--split", "train",
+        "--out", str(tmp_path / "source.jsonl"),
+    ])
+    assert r1.returncode == 0, r1.stderr
+
+    r2 = _run_cli([
+        "src.transforms.build",
+        "--source-manifest", str(tmp_path / "source.jsonl"),
+        "--out-manifest", str(tmp_path / "t.jsonl"),
+        "--out-root", str(tmp_path / "tr"),
+    ])
+    assert r2.returncode != 0
+    assert "no source rows" in (r2.stderr + r2.stdout)
 # end

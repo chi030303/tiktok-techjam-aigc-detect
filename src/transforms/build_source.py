@@ -6,8 +6,10 @@ one for the whole tree. image_id defaults to sha1("{rel_path}:{size}") so it is
 stable across machines without hashing file bodies; ``--hash-content`` switches
 to content hashing (needed for cross-dataset dedupe).
 
-The official demo set carries a DO_NOT_TRAIN marker; indexing it is refused
-(docs/data.md). Run from the repo root so stored paths stay relative.
+The official demo/val set carries a DO_NOT_TRAIN marker: indexing it as
+``--split train`` is refused; any other split (evaluation) is allowed with a
+stderr notice — the marker forbids training, not evaluation (docs/data.md).
+Run from the repo root so stored paths stay relative.
 
 Examples:
     python -m src.transforms.build_source --root data/cifake/train \\
@@ -33,9 +35,14 @@ from .manifest import SPLITS, SourceRecord, write_jsonl
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
 
 
+def find_train_forbidden(root: Path) -> list[Path]:
+    """DO_NOT_TRAIN markers under ``root`` (the official demo/val set carries one)."""
+    return list(root.rglob("DO_NOT_TRAIN"))
+
+
 def check_train_forbidden(root: Path) -> None:
-    """Refuse to index any tree carrying the demo-set DO_NOT_TRAIN marker."""
-    for marker in root.rglob("DO_NOT_TRAIN"):
+    """Refuse to index a DO_NOT_TRAIN tree as training data (``split="train"``)."""
+    for marker in find_train_forbidden(root):
         raise SystemExit(f"refusing to index train-forbidden tree: {marker}")
 
 
@@ -57,7 +64,18 @@ def collect_records(
     hash_content: bool = False,
 ) -> list[SourceRecord]:
     root = Path(root)
-    check_train_forbidden(root)
+    if split == "train":
+        # DO_NOT_TRAIN forbids training on the tree, not evaluating on it:
+        # only a train-split index is refused (PR #1 review).
+        check_train_forbidden(root)
+    else:
+        markers = find_train_forbidden(root)
+        if markers:
+            print(
+                f"note: holdout tree carries DO_NOT_TRAIN ({markers[0]}); "
+                "eval-only, never train",
+                file=sys.stderr,
+            )
     real = {s.strip().lower() for s in real_names.split(",") if s.strip()}
     fake = {s.strip().lower() for s in fake_names.split(",") if s.strip()}
     overlap = real & fake

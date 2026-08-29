@@ -140,8 +140,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--splits",
-        default="eval,test,unseen",
-        help="source splits to transform; train is excluded by default",
+        default="val,test,unseen",
+        help="source splits to transform; schema names only, train excluded by default",
     )
     parser.add_argument("--limit-per-setting", type=int, default=0)
     parser.add_argument(
