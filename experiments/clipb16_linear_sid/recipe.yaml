@@ -1,0 +1,36 @@
+# 2026-08-29, tianqi, first planned run: frozen CLIP-B/16 linear head on SID_Set
+name: clipb16_linear_sid
+description: Frozen CLIP ViT-B/16 + linear head, SID_Set train, JPEG-aligned online aug.
+owner: kiki
+
+backbone: clip-vit-base-patch16
+head: linear
+freeze_backbone: true
+
+train:
+  datasets:
+    - sid_set
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - official_val
+  - evalgen
+
+aug:
+  jpeg: true
+  blur: true
+  resize: true
+  noise: true
+  jitter: true
+  center_crop: true
+
+optim:
+  epochs: 3
+  batch_size: 128
+  lr: 0.001
+
+gpu: "1"
+# end
