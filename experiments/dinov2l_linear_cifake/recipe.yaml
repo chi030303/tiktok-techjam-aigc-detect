@@ -1,0 +1,38 @@
+# 2026-08-29, tianqi, CIFAKE full: frozen DINOv2-L + linear head
+name: dinov2l_linear_cifake
+description: Full CIFAKE (100k train / 20k test), frozen DINOv2 ViT-L/14 + linear head.
+owner: kiki
+
+backbone: dinov2-vit-large-patch14
+head: linear
+freeze_backbone: true
+
+train:
+  datasets:
+    - cifake
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - cifake_test
+
+aug:
+  jpeg: false
+  blur: false
+  resize: true
+  noise: false
+  jitter: false
+  center_crop: false
+
+optim:
+  epochs: 3
+  batch_size: 64
+  head_batch_size: 8192
+  cache_features: true
+  lr: 0.001
+  num_workers: 8
+
+gpu: "1"
+# end

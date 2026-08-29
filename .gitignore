@@ -26,8 +26,14 @@ checkpoints/**
 !checkpoints/.gitkeep
 models/**
 !models/.gitkeep
-outputs/**
+# 2026-08-29, tianqi, robustness csv/md are the deliverable; pixels stay gitignored
+outputs/*
 !outputs/.gitkeep
+!outputs/tables/
+!outputs/tables/.gitkeep
+!outputs/tables/*.csv
+!outputs/tables/*.md
+# end
 # 2026-08-29, tianqi, keep recipes; drop per-run artifacts
 experiments/**/runs/
 experiments/**/ckpts/
