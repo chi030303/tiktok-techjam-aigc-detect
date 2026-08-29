@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -20,8 +21,7 @@ from src.recipe import load_recipe, validate
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("recipe", type=Path)
-    parser.add_argument("--dry-run", action="store_true", default=True, help="print plan only until train loop exists")
-    parser.add_argument("--train", action="store_true", help="actually train (needs src/train)")
+    parser.add_argument("--train", action="store_true", help="train the linear head")
     args = parser.parse_args()
 
     recipe_path = args.recipe
@@ -49,7 +49,15 @@ def main() -> None:
     print(f"  gpu:       {recipe.get('gpu')}")
 
     if args.train:
-        raise SystemExit("train loop not wired yet; keep --dry-run and fill src/train")
+        # 2026-08-29, tianqi, smoke train is frozen backbone + linear head
+        gpu = recipe.get("gpu")
+        if gpu is not None:
+            os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu)
+        from src.train.loop import run_train
+
+        run_train(recipe)
+        return
+        # end
 
     print("dry-run ok")
 

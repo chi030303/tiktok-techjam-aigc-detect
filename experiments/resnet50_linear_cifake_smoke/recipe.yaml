@@ -1,0 +1,40 @@
+# 2026-08-29, tianqi, CIFAKE smoke: 400 images, frozen ResNet-50 + linear head
+name: resnet50_linear_cifake_smoke
+description: Smoke run on CIFAKE (200-500 images), frozen ResNet-50 + linear head.
+owner: kiki
+
+backbone: resnet-50
+head: linear
+freeze_backbone: true
+
+train:
+  datasets:
+    - cifake
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - cifake_test
+
+smoke:
+  max_train: 400
+  max_eval: 200
+  seed: 0
+
+aug:
+  jpeg: false
+  blur: false
+  resize: true
+  noise: false
+  jitter: false
+  center_crop: false
+
+optim:
+  epochs: 3
+  batch_size: 32
+  lr: 0.001
+
+gpu: "1"
+# end

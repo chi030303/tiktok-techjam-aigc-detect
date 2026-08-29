@@ -18,12 +18,13 @@ def list_images(root: Path) -> list[Path]:
 
 
 def predict_paths(image_dir: Path, ckpt: Path | None) -> list[dict]:
-    # 2026-08-29, tianqi, dummy 0.5 until a real checkpoint is wired
-    _ = ckpt
-    rows = []
-    for path in list_images(image_dir):
-        rows.append({"image_path": str(path), "pred": 0.5})
-    return rows
+    paths = list_images(image_dir)
+    if ckpt is None:
+        # 2026-08-29, tianqi, no ckpt = schema stub so local check.sh does not need torch
+        return [{"image_path": str(path), "pred": 0.5} for path in paths]
+    from src.infer import ProbePredictor
+
+    return ProbePredictor(ckpt).predict_dir(image_dir)
     # end
 
 

@@ -64,5 +64,13 @@ def artifact_dir(name: str) -> Path:
     return d
 
 
+def feat_cache_path(backbone: str, split: str, n: int, seed: int, size: int = 224) -> Path:
+    # 2026-08-29, tianqi, shared feat cache so lr/epoch sweeps skip backbone
+    d = exp_root() / "_featcache" / backbone
+    d.mkdir(parents=True, exist_ok=True)
+    return d / f"cifake_{split}_n{n}_seed{seed}_s{size}.pt"
+    # end
+
+
 NO_TRAIN_NAMES = frozenset({"val", "evalgen", "demo_wildfake"})
 # end

@@ -60,6 +60,22 @@ Official inference contract: a directory of images in, JSON out:
 
 `pred` = confidence the image is AIGC.
 
+<!-- 2026-08-29, tianqi, eval pipeline uses predict.py so judges and we share one interface -->
+## Evaluate (robustness table)
+
+Uses the same `predict.py` contract. Demo val / EvalGEN stay out of training.
+
+```bash
+# daily compact table: clean vs JPEG-50 vs center-crop 80%
+python scripts/run_eval.py robustness --split official_val --conditions daily --max-images 400
+
+# score an existing JSON
+python scripts/run_eval.py score --pred ./outputs/pred.json --split official_val
+```
+
+Tables land in `outputs/tables/` (csv / md / json). Full transform list and hold-out rules: [docs/data.md](docs/data.md).
+<!-- end -->
+
 ## Team workflow
 
 - **Daily handbook** (SSH, tmux, venv, GPUs): [docs/dev.md](docs/dev.md)

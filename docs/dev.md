@@ -139,6 +139,9 @@ Recipe 里的 `gpu:` 字段应和上面一致。群里报一声：「我占用 G
 3. 命名：`<骨干>_<头>_<数据>_<技巧>`，例如 `clipb16_linear_sid`。
 4. `python scripts/run_experiment.py experiments/<name>/recipe.yaml` 先 dry-run，确认 `data` / `models` 指到 `/workspace/...`。
 5. `train.forbid` 必须含 `val`、`evalgen`、`demo_wildfake`。
+<!-- 2026-08-29, tianqi, eval is a separate script; val stays out of train -->
+6. 训完评测：`python scripts/run_eval.py robustness --split official_val --conditions daily --max-images 400 --experiment <name> --ckpt .../ckpts/best.pt`。不要拿 `data/val` 开训。
+<!-- end -->
 
 ## 6. 日常不要做
 

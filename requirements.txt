@@ -4,4 +4,7 @@ huggingface_hub>=0.26
 modelscope>=1.20
 # 2026-08-29, tianqi, experiment recipes
 pyyaml>=6.0
+# 2026-08-29, tianqi, eval transforms / robustness table (no torch required)
+pillow>=10.0
+numpy>=1.26
 # end

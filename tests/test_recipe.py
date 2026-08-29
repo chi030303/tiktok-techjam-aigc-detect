@@ -15,6 +15,27 @@ def test_clipb16_recipe_forbids_holdouts():
     assert NO_TRAIN_NAMES <= set(recipe["train"]["forbid"])
 
 
+def test_smoke_recipes_forbids_holdouts():
+    root = Path(__file__).resolve().parents[1] / "experiments"
+    for name in ("resnet50_linear_cifake_smoke", "dinov2l_linear_cifake_smoke"):
+        recipe = load_recipe(root / name / "recipe.yaml")
+        validate(recipe)
+        assert "cifake" in recipe["train"]["datasets"]
+        assert NO_TRAIN_NAMES <= set(recipe["train"]["forbid"])
+
+
+def test_full_cifake_recipes_forbids_holdouts():
+    # 2026-08-29, tianqi, full CIFAKE recipes must not train on val/evalgen
+    root = Path(__file__).resolve().parents[1] / "experiments"
+    for name in ("resnet50_linear_cifake", "dinov2l_linear_cifake"):
+        recipe = load_recipe(root / name / "recipe.yaml")
+        validate(recipe)
+        assert "cifake" in recipe["train"]["datasets"]
+        assert "smoke" not in recipe
+        assert NO_TRAIN_NAMES <= set(recipe["train"]["forbid"])
+    # end
+
+
 def test_train_on_val_is_rejected():
     recipe = yaml.safe_load(
         """
@@ -30,4 +51,15 @@ train:
     except SystemExit:
         return
     raise AssertionError("expected SystemExit")
+
+
+def test_featcache_path_is_shared():
+    # 2026-08-29, tianqi, feat cache is keyed by backbone+split, not experiment name
+    from src.paths import feat_cache_path
+
+    a = feat_cache_path("resnet-50", "train", 100000, 0, 224)
+    b = feat_cache_path("resnet-50", "train", 100000, 0, 224)
+    assert a == b
+    assert a.name == "cifake_train_n100000_seed0_s224.pt"
+    # end
 # end

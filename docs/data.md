@@ -51,6 +51,28 @@ python scripts/download_backbones.py             # CLIP-B/16, CLIP-L/14, ResNet-
 
 其它变换同样是像素操作：blur / resize / noise / jitter / center crop 80%。
 
+<!-- 2026-08-29, tianqi, point at run_eval.py for the robustness deliverable -->
+## 评估管线
+
+官方接口仍是 `predict.py`（目录 → JSON）。评测脚本只 **读** `data/val` / `data/evalgen` / `data/cifake/test`，不会进 train loader。
+
+```bash
+# 已有 pred.json：对标签打分（acc / AUROC / FPR / FP·FN）
+python scripts/run_eval.py score --pred outputs/pred.json --split official_val
+
+# 日常粗表（clean vs JPEG-50 vs center-crop 80%），先用子集
+python scripts/run_eval.py robustness --split official_val --conditions daily --max-images 400 --ckpt checkpoints/best.pt
+
+# 提交用的全档位表（题面全部 JPEG / blur / resize / noise / jitter / crop）
+python scripts/run_eval.py robustness --split official_val --conditions full --ckpt checkpoints/best.pt
+
+# 把变换图冻到盘上（可选；robustness 默认写到实验 work dir）
+python scripts/run_eval.py materialize --split official_val --conditions daily --max-images 400
+```
+
+`--conditions daily` = `clean,jpeg_q50,center_crop_80`（[ops.md](ops.md) 每天那张粗表）。`--conditions full` = 题面全部档位。表写到 `outputs/tables/*.csv`（可进 git）和 `*.md`。EvalGEN 几乎全是假图，AUROC 会是空的，看 recall / mean_pred。
+<!-- end -->
+
 ## 权重
 
 | 模型 | 限制 | 存放 |
