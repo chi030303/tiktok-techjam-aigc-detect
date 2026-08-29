@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-python -m pytest -q tests/test_predict_schema.py
+python -m pytest -q tests/
 
 OUT="$(mktemp)"
 python predict.py "$ROOT/fixtures/sample_images" "$OUT"
