@@ -75,6 +75,13 @@ data/
 | `generator` | str\|null | 假图的生成器（如 `sd14`、`flux1-dev`），真图为 null |
 | `split` | str | train / val / test / unseen |
 | `width` / `height` | int | 原生尺寸 |
+<!-- 2026-08-30, tianqi, ablation + leak-audit columns; optional in old JSONL -->
+| `family` | str\|null | 假图 `t2i` / `i2i`；真图 **null**（不要写 `"real"`） |
+| `arch` | str\|null | `unet` / `dit` / `flow` / `pixel` / `gan`；真图 null |
+| `content_type` | str | `real` / `full_synthetic` / `partial_manipulation`。缺省时由 label 推断。**tampered 标第三种，默认不进 train** |
+| `original_format` | str\|null | 落盘后缀（`jpeg`→`jpg`）。审计 DDA 格式捷径，不是训练目标 |
+| `phash` | str\|null | 8×8 average hash，16 位 hex。去重、以及 SID train vs 官方 val 的 **整图拷贝** 碰撞。局部篡改通常对不上 COCO 原图，那些靠 `content_type` 排除 |
+<!-- end -->
 
 **transform**（`build.py` 产出，每张派生图一行；source 字段反范式带入，评估免 join）：
 
@@ -88,9 +95,27 @@ data/
 | `path` | str | 派生图路径 |
 | `label` / `source_dataset` / `generator` / `split` | | 从 source 复制 |
 | `width` / `height` | int | 派生后尺寸（crop 变小，其余不变） |
+<!-- 2026-08-30, tianqi, transform rows copy source audit columns -->
+| `family` / `arch` / `content_type` / `original_format` / `phash` | | 从 source 复制（旧 transform JSONL 缺这几列也能读） |
+<!-- end -->
 
-校验是严格的：字段缺失、多余、取值非法（label/split/transform_key/params/seed）都在
-构建时报错，避免 schema 漂移悄悄弄脏评估表。
+校验：core 字段缺失/多余/取值非法会在构建时报错。`family` 等新列可缺省为 null。
+旧 CIFAKE source JSONL（没有 phash）仍然能 `read_jsonl`。
+
+训练过滤（`filter_train_rows`）：
+
+```python
+from src.transforms.manifest import read_jsonl, filter_train_rows
+
+train = read_jsonl("data/manifests/source_sid_train.jsonl", "source")
+holdout = read_jsonl("data/manifests/source_demo_val.jsonl", "source")
+kept, leaks = filter_train_rows(train, holdout=holdout)
+# kept: split=train 且不是 partial_manipulation，且 phash 未撞上 holdout
+```
+
+`build_source` 会写 phash / original_format。假图再加 `--generator dalle3 --family t2i --arch flow`。真图的 generator/family/arch 一律写成 null。
+
+## 6. 用法
 
 ## 6. 用法
 
@@ -151,11 +176,13 @@ REAL/FAKE 分层排列，冒烟集可能只有单一标签）——它只用于�
 
 - **CIFAKE**：32×32。blur σ2 / JPEG q30 在这个分辨率上破坏力比大图更狠，属正常，
   不要为它单独放宽参数。目录 `train/{REAL,FAKE}`、`test/{REAL,FAKE}`，label 按父目录。
-- **SID_Set**（HF parquet，~140GB）：三分类 0=real / 1=fully synthetic / 2=tampered，
-  二分类任务**只用 0 和 1**，tampered 不要混入；建议用 `datasets` 流式抽子集落成
-  图片文件再入库，别全量拉。
-- **Flux 产物**：`--dataset flux_gen --split unseen`，目录与训练数据物理分开；是否
-  拿少量当补充训练集由算法侧决定（data.md：可补充，不可当主训练集）。
+- **SID_Set**（HF parquet，~140GB）：三分类 0=real / 1=fully synthetic / 2=tampered。
+  入库时 `label` 仍是 0/1；tampered 用 `content_type=partial_manipulation`，
+  **不要当主力 fake**。SID tampered 底图来自 COCO val：phash **不一定**撞上
+  `data/val/real`（局部编辑会改 hash），所以排除靠 content_type，外加
+  `filter_train_rows(train, holdout=official_val)` 抓整图拷贝。
+- **Flux 产物**：`--dataset flux_gen --split unseen --generator flux --family t2i --arch flow`；
+  目录与训练数据物理分开；是否拿少量当补充训练集由算法侧决定（data.md：可补充，不可当主训练集）。
 - **演示集** `data/val/`（COCO val2017 + DALL·E Advanced）：带 `DO_NOT_TRAIN`——
   当 `--split train` 索引会被拒绝；评测索引（其他 split）放行并打印 stderr 提示。
   该目录绝不能用于训练，训练 loader 也不得扫描。

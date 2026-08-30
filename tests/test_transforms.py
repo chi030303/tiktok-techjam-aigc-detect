@@ -16,6 +16,10 @@ from src.transforms.build_source import check_train_forbidden, collect_records
 from src.transforms.manifest import (
     SourceRecord,
     TransformRecord,
+    average_phash,
+    filter_train_rows,
+    is_trainable,
+    phash_collisions,
     read_jsonl,
     write_jsonl,
 )
@@ -311,4 +315,90 @@ def test_cli_default_excludes_train_source(tmp_path):
     ])
     assert r2.returncode != 0
     assert "no source rows" in (r2.stderr + r2.stdout)
+
+
+# 2026-08-30, tianqi, new source columns + phash leak filter
+def test_source_optional_columns_default_and_infer():
+    rec = SourceRecord.from_dict(source_row())
+    assert rec.family is None
+    assert rec.arch is None
+    assert rec.content_type == "full_synthetic"
+    assert rec.phash is None
+    real = SourceRecord.from_dict(source_row(label=0, generator=None))
+    assert real.content_type == "real"
+    assert real.generator is None
+    coerced = SourceRecord.from_dict(source_row(label=0, generator="real"))
+    assert coerced.generator is None
+    with pytest.raises(ValueError):
+        SourceRecord.from_dict(source_row(label=0, generator="flux"))
+    with pytest.raises(ValueError):
+        SourceRecord.from_dict(source_row(family="diffusion"))
+    tampered = SourceRecord.from_dict(
+        source_row(content_type="partial_manipulation", split="train")
+    )
+    assert not is_trainable(tampered)
+    assert is_trainable(SourceRecord.from_dict(source_row(split="train")))
+
+
+def test_phash_and_coco_leak_filter():
+    left = np.zeros((48, 64, 3), dtype=np.uint8)
+    left[:, :32] = 255
+    right = np.zeros((48, 64, 3), dtype=np.uint8)
+    right[:, 32:] = 255
+    a = Image.fromarray(left, mode="RGB")
+    b = Image.fromarray(right, mode="RGB")
+    ha = average_phash(a)
+    hb = average_phash(b)
+    assert ha != hb
+    assert average_phash(a) == ha
+    train = SourceRecord.from_dict(
+        source_row(image_id="train1", split="train", path="sid/x.png", phash=ha)
+    )
+    holdout = SourceRecord.from_dict(
+        source_row(
+            image_id="coco1",
+            split="val",
+            label=0,
+            generator=None,
+            path="val/real/x.jpg",
+            phash=ha,
+        )
+    )
+    other = SourceRecord.from_dict(
+        source_row(image_id="train2", split="train", path="sid/y.png", phash=hb)
+    )
+    hits = phash_collisions([train, other], [holdout])
+    assert [h["image_id"] for h in hits] == ["train1"]
+    kept, leaks = filter_train_rows([train, other], holdout=[holdout])
+    assert [r.image_id for r in kept] == ["train2"]
+    assert leaks[0]["other_image_id"] == "coco1"
+
+
+def test_build_source_writes_phash_and_null_generator_on_reals(tmp_path):
+    root = tmp_path / "mix"
+    (root / "FAKE").mkdir(parents=True)
+    (root / "REAL").mkdir(parents=True)
+    make_image(seed=1).save(root / "FAKE" / "a.png")
+    stripe = np.zeros((48, 64, 3), dtype=np.uint8)
+    stripe[:, 32:] = 255
+    Image.fromarray(stripe, mode="RGB").save(root / "REAL" / "c.png")
+    records = collect_records(
+        root=root,
+        dataset="self_gen_pixart",
+        split="train",
+        generator="pixart-sigma",
+        family="t2i",
+        arch="dit",
+    )
+    fake, real = records
+    assert fake.generator == "pixart-sigma"
+    assert fake.family == "t2i"
+    assert fake.arch == "dit"
+    assert fake.original_format == "png"
+    assert fake.phash and len(fake.phash) == 16
+    assert real.generator is None
+    assert real.family is None
+    assert real.arch is None
+    assert real.content_type == "real"
+    assert real.phash != fake.phash
 # end
