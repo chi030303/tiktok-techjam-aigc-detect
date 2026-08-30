@@ -6,4 +6,6 @@ huggingface_hub>=0.26
 modelscope>=1.20
 # 2026-08-29, tianqi, experiment recipes
 pyyaml>=6.0
+# SID_Set parquet manifest builder
+pyarrow>=17.0
 # end

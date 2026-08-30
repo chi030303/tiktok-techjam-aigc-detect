@@ -118,6 +118,7 @@ def run_build(
                     # 2026-08-30, tianqi, denormalize source audit columns
                     family=src.family,
                     arch=src.arch,
+                    generation_type=src.generation_type,
                     content_type=src.content_type,
                     original_format=src.original_format,
                     phash=src.phash,
