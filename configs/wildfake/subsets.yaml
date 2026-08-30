@@ -1,0 +1,31 @@
+# WildFake ModelScope download targets (hy2628982280/WildFake)
+# Used by scripts/download_wildfake_subset.py
+
+version: 1
+dataset_id: hy2628982280/WildFake
+
+# C ablation packs (DATA_ABLATION_PLAN §9)
+subsets:
+  C_pixel_adm:
+    description: Pixel-space ADM cross-architecture
+    files:
+      - Images/Diffusion_based/ADM.zip
+    extract_under: cross_arch/adm
+
+  C_pixel_ddpm:
+    description: Pixel-space DDPM cross-architecture
+    files:
+      - Images/Diffusion_based/DDPM.zip
+    extract_under: cross_arch/ddpm
+
+  C_unet_sd_original:
+    description: WildFake originalSD latent-UNet coverage (version not assumed)
+    files:
+      - Images/Diffusion_based/SD/originalSD/Advanced/part_7.zip
+    extract_under: cross_arch/sd_original
+
+  real_ffhq:
+    description: WildFake real FFHQ (optional shared real; never use Real/coco)
+    files:
+      - Images/Real/ffhq.zip
+    extract_under: real/ffhq

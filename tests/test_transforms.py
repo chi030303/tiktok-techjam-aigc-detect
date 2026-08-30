@@ -332,7 +332,7 @@ def test_source_optional_columns_default_and_infer():
     with pytest.raises(ValueError):
         SourceRecord.from_dict(source_row(label=0, generator="flux"))
     with pytest.raises(ValueError):
-        SourceRecord.from_dict(source_row(family="diffusion"))
+        SourceRecord.from_dict(source_row(label=0, family="diffusion"))
     tampered = SourceRecord.from_dict(
         source_row(content_type="partial_manipulation", split="train")
     )
@@ -387,12 +387,14 @@ def test_build_source_writes_phash_and_null_generator_on_reals(tmp_path):
         dataset="self_gen_pixart",
         split="train",
         generator="pixart-sigma",
-        family="t2i",
+        family="diffusion",
+        generation_type="t2i",
         arch="dit",
     )
     fake, real = records
     assert fake.generator == "pixart-sigma"
-    assert fake.family == "t2i"
+    assert fake.family == "diffusion"
+    assert fake.generation_type == "t2i"
     assert fake.arch == "dit"
     assert fake.original_format == "png"
     assert fake.phash and len(fake.phash) == 16

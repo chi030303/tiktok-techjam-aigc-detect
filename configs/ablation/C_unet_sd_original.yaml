@@ -1,0 +1,16 @@
+# C-UNet: WildFake originalSD latent-UNet architecture probe
+name: C_unet_sd_original
+seed: 20260830
+
+real:
+  manifest: data/manifests/source_sid_train.jsonl
+  n: 8000
+  label: 0
+
+fake:
+  manifest: data/manifests/source_wildfake_sd_original.jsonl
+  n: 1000
+  label: 1
+  family: [diffusion]
+  arch: [unet]
+  generation_type: [t2i]

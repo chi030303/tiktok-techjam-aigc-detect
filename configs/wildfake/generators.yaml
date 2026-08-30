@@ -1,0 +1,86 @@
+# WildFake path -> generator identity (scan with build_wildfake_manifest.py)
+# Patterns match relative path from --root (case-insensitive regex).
+# First match wins. Run with --report-unmatched to fix rules after first scan.
+
+version: 1
+
+exclude_patterns:
+  # Official demo / holdout — never index for train
+  - '(?i)dalle.*/advanced'
+  - '(?i)/advanced/.*dalle'
+  - '(?i)midjourney'
+  - '(?i)dalle\.zip'
+  # COCO real overlaps official val — do not train
+  - '(?i)(^|/)real/coco(/|$)'
+  - '(?i)real_coco'
+  - '(?i)/coco\.zip'
+  # SD variants outside cross-arch UNet scope
+  - '(?i)personalized|dreambooth|lora|controlnet|sdxl|sdwithadaptor|lycris'
+  - '(?i)(^|/)typical(/|$)'
+
+rules:
+  # ---------- Real (WildFake Real/* subsets, not COCO) ----------
+  - pattern: '(?i)(^|/)(real|afhq|ffhq|imagenet|laion|celebahq|church|wukong)(/|$)'
+    generator: null
+    family: null
+    arch: null
+    generation_type: null
+    content_type: real
+    label: 0
+
+  # ---------- Pixel-space diffusion (cross-architecture) ----------
+  - pattern: '(?i)(^|/)adm(/|$|\.zip)'
+    generator: adm
+    family: diffusion
+    arch: pixel
+    generation_type: t2i
+    content_type: full_synthetic
+    label: 1
+  - pattern: '(?i)ddpm'
+    generator: ddpm
+    family: diffusion
+    arch: pixel
+    generation_type: t2i
+    content_type: full_synthetic
+    label: 1
+  - pattern: '(?i)ddim'
+    generator: ddim
+    family: diffusion
+    arch: pixel
+    generation_type: t2i
+    content_type: full_synthetic
+    label: 1
+  - pattern: '(?i)imagen'
+    generator: imagen
+    family: diffusion
+    arch: pixel
+    generation_type: t2i
+    content_type: full_synthetic
+    label: 1
+
+  # ---------- Latent UNet (SD 1.x cross-architecture) ----------
+  - pattern: '(?i)originalsd|original_sd|/sd/original'
+    # WildFake's "originalSD" confirms latent-UNet coverage, but not a
+    # particular SD minor version without consulting its row metadata.
+    generator: sd_original
+    family: diffusion
+    arch: unet
+    generation_type: t2i
+    content_type: full_synthetic
+    label: 1
+
+  # ---------- GAN (optional, for B ablation) ----------
+  - pattern: '(?i)biggan'
+    generator: biggan
+    family: gan
+    arch: null
+    generation_type: t2i
+    content_type: full_synthetic
+    label: 1
+  - pattern: '(?i)stylegan'
+    generator: stylegan2
+    family: gan
+    arch: null
+    generation_type: t2i
+    content_type: full_synthetic
+    label: 1

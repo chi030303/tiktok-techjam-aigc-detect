@@ -1,0 +1,16 @@
+# C-Flow: SID FLUX subset architecture probe (1k fake, shared real pool TBD)
+name: C_flow_sid
+seed: 20260830
+
+real:
+  manifest: data/manifests/source_sid_train.jsonl
+  n: 8000
+  label: 0
+
+fake:
+  manifest: data/manifests/source_sid_train.jsonl
+  n: 1000
+  label: 1
+  family: [diffusion]
+  arch: [flow]
+  generation_type: [t2i]

@@ -17,11 +17,13 @@ still loads. New data should fill them via build_source or a custom writer.
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 from collections import defaultdict
 from dataclasses import MISSING, asdict, dataclass, fields
 from pathlib import Path
 
 from PIL import Image
+import numpy as np
 
 from .spec import SETTINGS_BY_KEY
 
@@ -29,9 +31,11 @@ from .spec import SETTINGS_BY_KEY
 
 SPLITS = ("train", "val", "test", "unseen")
 
-# 2026-08-30, tianqi, ablation + leak-audit enums (reals use null, not the string "real")
-FAMILIES = ("t2i", "i2i")
-ARCHES = ("unet", "dit", "flow", "pixel", "gan")
+# 2026-08-30, samily, ablation enums per DATA_ABLATION_PLAN.md §4
+# family = generator family; generation_type = t2i/i2i (separate axis)
+FAMILIES = ("gan", "diffusion")
+GENERATION_TYPES = ("t2i", "i2i")
+ARCHES = ("unet", "dit", "flow", "pixel")
 CONTENT_TYPES = ("real", "full_synthetic", "partial_manipulation")
 FORMAT_ALIASES = {"jpeg": "jpg", "tiff": "tif"}
 # end
@@ -120,21 +124,28 @@ def _check_phash(value: str | None, cls_name: str) -> None:
 
 def _check_ablation(rec, cls_name: str) -> None:
     if rec.family is not None and rec.family not in FAMILIES:
-        raise ValueError(f"{cls_name}: family must be t2i|i2i|null, got {rec.family!r}")
+        raise ValueError(f"{cls_name}: family must be gan|diffusion|null, got {rec.family!r}")
+    gen_type = getattr(rec, "generation_type", None)
+    if gen_type is not None and gen_type not in GENERATION_TYPES:
+        raise ValueError(
+            f"{cls_name}: generation_type must be t2i|i2i|null, got {gen_type!r}"
+        )
     if rec.arch is not None and rec.arch not in ARCHES:
-        raise ValueError(f"{cls_name}: arch must be unet|dit|flow|pixel|gan|null, got {rec.arch!r}")
+        raise ValueError(f"{cls_name}: arch must be unet|dit|flow|pixel|null, got {rec.arch!r}")
     if rec.content_type is not None and rec.content_type not in CONTENT_TYPES:
         raise ValueError(
             f"{cls_name}: content_type must be real|full_synthetic|"
             f"partial_manipulation|null, got {rec.content_type!r}"
         )
     if rec.label == 0:
-        if rec.family is not None or rec.arch is not None:
-            raise ValueError(f"{cls_name}: reals must have family=arch=null")
+        if rec.family is not None or rec.arch is not None or gen_type is not None:
+            raise ValueError(f"{cls_name}: reals must have family=arch=generation_type=null")
         if rec.content_type not in (None, "real"):
             raise ValueError(f"{cls_name}: real label requires content_type=real")
     if rec.label == 1 and rec.content_type == "real":
         raise ValueError(f"{cls_name}: fake label cannot have content_type=real")
+    if rec.label == 1 and rec.family == "gan" and rec.arch is not None:
+        raise ValueError(f"{cls_name}: gan family should use arch=null")
     _check_phash(rec.phash, cls_name)
 
 
@@ -144,23 +155,35 @@ def infer_content_type(label: int, content_type: str | None) -> str:
     return "real" if int(label) == 0 else "full_synthetic"
 
 
-# 2026-08-30, tianqi, 8x8 average hash; no extra dep. Catches copies, not local inpaint.
+@lru_cache(maxsize=4)
+def _dct_matrix(size: int) -> np.ndarray:
+    # float64 avoids platform BLAS instability observed for these tiny DCT
+    # products on some Accelerate builds.
+    n = np.arange(size, dtype=np.float64)
+    k = n[:, None]
+    return np.cos(np.pi * (2 * n + 1) * k / (2 * size))
+
+
 def average_phash(img: Image.Image, size: int = 8) -> str:
-    """Perceptual hash for dedupe / val-leak audit. 64-bit aHash as 16 hex chars.
+    """64-bit DCT perceptual hash for dedupe / validation-leak auditing.
 
     Tampered (local edit) images usually will NOT match the COCO original —
     exclude those with content_type=partial_manipulation, do not rely on phash.
     """
-    gray = img.convert("L").resize((size, size), Image.Resampling.BILINEAR)
-    pixels = list(gray.tobytes())
-    avg = sum(pixels) / max(1, len(pixels))
+    dct_size = size * 4
+    gray = img.convert("L").resize(
+        (dct_size, dct_size),
+        Image.Resampling.LANCZOS,
+    )
+    pixels = np.asarray(gray, dtype=np.float64)
+    basis = _dct_matrix(dct_size)
+    low = (basis @ pixels @ basis.T)[:size, :size].reshape(-1)
+    threshold = float(np.median(low[1:]))
     bits = 0
-    for i, pix in enumerate(pixels):
-        if pix >= avg:
+    for i, coefficient in enumerate(low):
+        if coefficient >= threshold:
             bits |= 1 << i
-    width = size * size // 4
-    return f"{bits:0{width}x}"
-    # end
+    return f"{bits:0{size * size // 4}x}"
 
 
 def hamming_hex(a: str, b: str) -> int:
@@ -257,12 +280,13 @@ class SourceRecord(_Record):
     split: str  # train | val | test | unseen
     width: int
     height: int
-    # 2026-08-30, tianqi, ablation + leak-audit columns (optional in old JSONL)
-    family: str | None = None  # t2i | i2i | None
-    arch: str | None = None  # unet | dit | flow | pixel | gan | None
+    # 2026-08-30, samily, ablation columns (optional in old JSONL)
+    family: str | None = None  # gan | diffusion | None
+    arch: str | None = None  # unet | dit | flow | pixel | None
+    generation_type: str | None = None  # t2i | i2i | None
     content_type: str | None = None  # real | full_synthetic | partial_manipulation
     original_format: str | None = None  # jpg | png | webp | … (suffix, jpeg→jpg)
-    phash: str | None = None  # 16-hex aHash; None if not computed
+    phash: str | None = None  # 16-hex DCT pHash; None if not computed
     # end
 
     def validate(self) -> None:
@@ -291,9 +315,10 @@ class TransformRecord(_Record):
     split: str
     width: int
     height: int
-    # 2026-08-30, tianqi, copy source ablation columns so eval/badcase skip a join
+    # 2026-08-30, samily, copy source ablation columns so eval/badcase skip a join
     family: str | None = None
     arch: str | None = None
+    generation_type: str | None = None
     content_type: str | None = None
     original_format: str | None = None
     phash: str | None = None
