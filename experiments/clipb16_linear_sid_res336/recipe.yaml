@@ -1,0 +1,40 @@
+# 2026-08-30, yun, Exp4 ablation vs clipb16_linear_sid_aug baseline: only image_size changes (224 -> 336)
+name: clipb16_linear_sid_res336
+description: Single-variable ablation of clipb16_linear_sid_aug -- input resolution 224->336, CLIP-B/16 pos-embedding interpolated, backbone still frozen, everything else identical to baseline.
+owner: yun
+
+backbone: clip-vit-base-patch16
+head: linear
+freeze_backbone: true
+input_mode: rgb
+image_size: 336
+
+train:
+  datasets:
+    - sid_set
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - official_val
+
+aug:
+  online: true
+  jpeg: true
+  blur: true
+  resize: true
+  noise: true
+  jitter: true
+  center_crop: true
+
+optim:
+  epochs: 3
+  batch_size: 32
+  lr: 0.001
+  num_workers: 4
+  cache_features: false
+
+gpu: "1"
+# end
