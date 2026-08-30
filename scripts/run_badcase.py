@@ -78,6 +78,8 @@ def main() -> None:
 
     name, root, rows = _load_rows(args)
     if args.max_images is not None:
+        if args.max_images <= 0:
+            raise SystemExit("--max-images must be a positive integer")
         rows = subsample_balanced(rows, args.max_images, args.seed)
     manifest_rows = load_manifest_rows(
         [Path(x) for x in args.manifest.split(",")] if args.manifest else None

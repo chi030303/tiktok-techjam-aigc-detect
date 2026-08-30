@@ -235,11 +235,18 @@ def test_gallery_script_smoke(tmp_path):
         preds.append({"image_path": str(p), "pred": val})
     pred_json = tmp_path / "pred.json"
     pred_json.write_text(json.dumps(preds), encoding="utf-8")
+    manifest = tmp_path / "source.jsonl"
+    manifest.write_text(
+        json.dumps({"path": str(root / "fake" / "c.png"), "generator": "sd14",
+                    "source_dataset": "cifake"}) + "\n",
+        encoding="utf-8",
+    )
 
     out = tmp_path / "gallery.html"
     r = subprocess.run(
         [sys.executable, "scripts/badcase_gallery.py", "--pred", str(pred_json),
-         "--image-dir", str(root), "--out", str(out), "--max-per-type", "10",
+         "--image-dir", str(root), "--manifest", str(manifest),
+         "--out", str(out), "--max-per-type", "10",
          "--thumb", "64", "--title", "smoke"],
         capture_output=True, text=True, cwd=ROOT,
     )
@@ -250,4 +257,58 @@ def test_gallery_script_smoke(tmp_path):
     assert html_text.count('class="badge">FN') == 1
     # worst first: FP sorted by pred desc
     assert html_text.find("0.950") < html_text.find("0.900")
+    # manifest metadata lands on the card (PR#9 review L1)
+    assert "sd14" in html_text
+    # every shown thumbnail resolved; stdout carries the count (PR#9 review M2)
+    assert "thumbnails 3/3 embedded" in r.stdout
+    assert "thumbnails 3/3" in html_text
+
+
+def test_gallery_missing_thumbs_surfaced(tmp_path):
+    """Files gone (cleaned materialized tree) must not fail silently (PR#9 review M2)."""
+    root = tmp_path / "val"
+    (root / "real").mkdir(parents=True)
+    (root / "fake").mkdir(parents=True)
+    preds = []
+    for rel, val in [("real/a.png", 0.9), ("fake/b.png", 0.1)]:
+        p = root / rel
+        make_image(seed=len(rel)).save(p)
+        # pred paths under a prefix that no longer exists on disk
+        preds.append({"image_path": str(tmp_path / "materialized" / "clean" / rel),
+                      "pred": val})
+    pred_json = tmp_path / "pred.json"
+    pred_json.write_text(json.dumps(preds), encoding="utf-8")
+
+    out = tmp_path / "gallery.html"
+    r = subprocess.run(
+        [sys.executable, "scripts/badcase_gallery.py", "--pred", str(pred_json),
+         "--image-dir", str(root),
+         "--predict-root", str(tmp_path / "materialized" / "clean"),
+         "--out", str(out)],
+        capture_output=True, text=True, cwd=ROOT,
+    )
+    assert r.returncode == 0  # still renders, but loudly
+    html_text = out.read_text(encoding="utf-8")
+    assert html_text.count("image not found") == 2
+    assert "data:image/jpeg;base64" not in html_text
+    assert "thumbnails 0/2" in r.stdout
+    assert "thumbnails 0/2" in html_text
+    assert "warning: all 2 thumbnails failed" in r.stderr
+
+
+def test_gallery_rejects_nonpositive_max_images(tmp_path):
+    """--max-images 0 is a footgun (run_badcase would subsample 2 rows); both CLIs reject it."""
+    root = tmp_path / "val"
+    (root / "real").mkdir(parents=True)
+    make_image(seed=1).save(root / "real" / "a.png")
+    pred_json = tmp_path / "pred.json"
+    pred_json.write_text(json.dumps([{"image_path": str(root / "real" / "a.png"),
+                                      "pred": 0.1}]), encoding="utf-8")
+    r = subprocess.run(
+        [sys.executable, "scripts/badcase_gallery.py", "--pred", str(pred_json),
+         "--image-dir", str(root), "--max-images", "0", "--out", str(tmp_path / "g.html")],
+        capture_output=True, text=True, cwd=ROOT,
+    )
+    assert r.returncode != 0
+    assert "--max-images" in r.stderr
 # end

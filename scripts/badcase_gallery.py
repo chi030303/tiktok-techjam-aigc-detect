@@ -40,7 +40,7 @@ _CARD = """
   {img}
   <figcaption>
     <span class="badge">{etype}</span>
-    <b>pred {pred:.3f}</b> · label {label} · {condition}<br>
+    <b>pred {pred:.3f}</b> · label {label} · {condition} · {generator}<br>
     <code>{path}</code>
   </figcaption>
 </figure>"""
@@ -65,22 +65,47 @@ _PAGE = """<!doctype html>
 </body></html>"""
 
 
-def thumb_b64(path: Path, max_side: int) -> str | None:
-    try:
-        with Image.open(path) as im:
-            im = im.convert("RGB")
-            im.thumbnail((max_side, max_side))
-            buf = io.BytesIO()
-            im.save(buf, "JPEG", quality=70)
-            return base64.b64encode(buf.getvalue()).decode("ascii")
-    except Exception:
-        return None
+def thumb_b64(candidates: list[Path], max_side: int) -> str | None:
+    """First readable candidate wins; None means every candidate failed."""
+    for path in candidates:
+        try:
+            with Image.open(path) as im:
+                im = im.convert("RGB")
+                im.thumbnail((max_side, max_side))
+                buf = io.BytesIO()
+                im.save(buf, "JPEG", quality=70)
+                return base64.b64encode(buf.getvalue()).decode("ascii")
+        except Exception:
+            continue
+    return None
 
 
-def render_section(rows: list[dict], max_n: int, max_side: int) -> str:
-    cards = []
+def _thumb_candidates(image_path: str, roots: list[Path]) -> list[Path]:
+    """Places the thumbnail may live: raw path first, then root-relative forms.
+
+    Mirrors the label join's candidate logic so pred paths that only resolve
+    under ``--predict-root`` still find their files from any CWD.
+    """
+    p = Path(image_path)
+    out = [p]
+    if p.is_absolute():
+        return out
+    for root in roots:
+        cand = root / p
+        if cand not in out:
+            out.append(cand)
+    return out
+
+
+def render_section(
+    rows: list[dict], header: str, max_n: int, max_side: int, roots: list[Path]
+) -> tuple[str, int, int]:
+    """Render one FP/FN section; returns ``(html, n_shown, n_missing)``."""
+    cards, missing = [], 0
     for r in rows[:max_n]:
-        b64 = thumb_b64(Path(r["image_path"]), max_side)
+        b64 = thumb_b64(_thumb_candidates(r["image_path"], roots), max_side)
+        if b64 is None:
+            missing += 1
         img = (
             f'<img src="data:image/jpeg;base64,{b64}" alt="badcase">'
             if b64
@@ -93,17 +118,18 @@ def render_section(rows: list[dict], max_n: int, max_side: int) -> str:
                 pred=r["pred"],
                 label=r["label"],
                 condition=html.escape(str(r.get("condition", ""))),
+                generator=html.escape(str(r.get("generator", ""))),
                 path=html.escape(r["image_path"]),
                 img=img,
             )
         )
     shown = f"showing {len(cards)}/{len(rows)}"
-    title = (
-        "FP · 真图误判为 AI（误杀）"
-        if rows and rows[0]["error_type"] == "FP"
-        else "FN · 假图漏检（判为真）"
+    return (
+        f"<h2>{html.escape(header)} <span class='meta'>{shown}</span></h2>"
+        f"<div class='grid'>{''.join(cards)}</div>",
+        len(cards),
+        missing,
     )
-    return f"<h2>{html.escape(title)} <span class='meta'>{shown}</span></h2><div class='grid'>{''.join(cards)}</div>"
 
 
 def main() -> None:
@@ -133,7 +159,9 @@ def main() -> None:
         root, rows = load_split(args.split)
     else:
         raise SystemExit("need --split or --image-dir")
-    if args.max_images:
+    if args.max_images is not None:
+        if args.max_images <= 0:
+            raise SystemExit("--max-images must be a positive integer")
         rows = subsample_balanced(rows, args.max_images, args.seed)
 
     manifest_rows = load_manifest_rows(
@@ -152,21 +180,43 @@ def main() -> None:
         (r for r in res["joined"] if r["error_type"] == "FN"), key=lambda r: r["pred"]
     )
 
-    sections = ""
+    thumb_roots = [root] + ([args.predict_root] if args.predict_root else [])
+    sections, n_shown, n_missing = "", 0, 0
     if fps:
-        sections += render_section(fps, args.max_per_type, args.thumb)
+        sec, shown, missing = render_section(
+            fps, "FP · 真图误判为 AI（误杀）", args.max_per_type, args.thumb, thumb_roots
+        )
+        sections += sec
+        n_shown += shown
+        n_missing += missing
     if fns:
-        sections += render_section(fns, args.max_per_type, args.thumb)
+        sec, shown, missing = render_section(
+            fns, "FN · 假图漏检（判为真）", args.max_per_type, args.thumb, thumb_roots
+        )
+        sections += sec
+        n_shown += shown
+        n_missing += missing
     meta = (
         f"threshold={args.threshold} · FP={len(fps)} · FN={len(fns)} · "
-        f"joined={len(res['joined'])} · unmatched_labels={res['unmatched_labels']}"
+        f"joined={len(res['joined'])} · unmatched_labels={res['unmatched_labels']} · "
+        f"thumbnails {n_shown - n_missing}/{n_shown}"
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
         _PAGE.format(title=html.escape(args.title), meta=meta, sections=sections),
         encoding="utf-8",
     )
-    print(f"wrote {args.out} (FP {len(fps)} / FN {len(fns)})")
+    print(
+        f"wrote {args.out} (FP {len(fps)} / FN {len(fns)}; "
+        f"thumbnails {n_shown - n_missing}/{n_shown} embedded)"
+    )
+    if n_shown and n_missing == n_shown:
+        print(
+            f"warning: all {n_shown} thumbnails failed to load — pred paths point at "
+            f"files this machine/CWD cannot see; check --predict-root and that the "
+            f"images still exist",
+            file=sys.stderr,
+        )
 
 
 if __name__ == "__main__":
