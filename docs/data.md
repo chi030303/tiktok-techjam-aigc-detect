@@ -8,7 +8,7 @@
 
 | 路径 | 内容 |
 |---|---|
-| `/workspace/data` | `sid_set` / `cifake` / `val` / `evalgen` |
+| `/workspace/data` | `sid_set` / `cifake` / `val` / `evalgen` / `wildfake`（全量，可选） |
 | `/workspace/models` | CLIP / ResNet / DINOv2 |
 | `/workspace/experiments` | 各实验的 ckpt、log（按实验名） |
 | `/workspace/<who>/tiktok-techjam-aigc-detect` | 代码 + `experiments/<name>/recipe.yaml` |
@@ -26,9 +26,14 @@
 
 `data/val` **就是题面那份 Demonstration 集**：不算分、只用来看迭代和 robustness 表。**不是** 主办方隐藏打分测试集。目录内 `DO_NOT_TRAIN`。训练 loader 不得扫描 `data/val/`、`data/evalgen/`、`data/demo_wildfake/`。
 
+# 2026-08-30, tianqi, full WildFake is a train source; only the demo subset stays hold-out
+**WildFake 全量**（`data/wildfake/`）不是演示集，**可以训**，但必须先丢掉和 `data/val` 重叠的部分（COCO val2017、DALL·E Advanced、phash）。不要给全量树打 `DO_NOT_TRAIN`。EvalGEN 仍然禁止训练。
+# end
+
 ```bash
 python scripts/download_official_val.py          # -> data/val  or /workspace/data/val
 python scripts/download_evalgen.py              # extra hold-out, not official val
+python scripts/download_wildfake.py            # full corpus for train; not data/val
 python scripts/download_backbones.py             # CLIP-B/16, CLIP-L/14, ResNet-50, DINOv2-L/14
 ```
 
@@ -38,7 +43,7 @@ python scripts/download_backbones.py             # CLIP-B/16, CLIP-L/14, ResNet-
 |---|---|---|---|
 | CIFAKE | 冒烟、短实验 | [Kaggle](https://www.kaggle.com/datasets/birdy654/cifake-real-and-ai-generated-synthetic-images) | `data/cifake/` |
 | SID_Set | 主训练（优先） | [HF saberzl/SID_Set](https://huggingface.co/datasets/saberzl/SID_Set) | `data/sid_set/` |
-| WildFake 全量 | 可选，很大 | [ModelScope](https://modelscope.cn/datasets/hy2628982280/WildFake/summary) | 不要和演示子集混 |
+| WildFake 全量 | 训练（排除 `data/val` 重叠后） | `python scripts/download_wildfake.py` | `data/wildfake/` |
 
 公开、有授权即可。标签只有 **真 / 假**，不要物体类别。人货背景混在一起训。
 
@@ -72,6 +77,24 @@ python scripts/run_eval.py materialize --split official_val --conditions daily -
 
 # 2026-08-29, tianqi, eval condition names now match src/transforms/spec.py
 `--conditions daily` = `clean,jpeg_q50,crop_p80`（[ops.md](ops.md) 每天那张粗表）。`--conditions full` = clean + 官方 14 档（`docs/transforms.md`）。像素算子和种子以 `src/transforms` 为准，不要再用 `center_crop_80` / `jitter_m20`。表写到 `outputs/tables/*.csv`（可进 git）和 `*.md`。EvalGEN 几乎全是假图，AUROC 会是空的，看 recall / mean_pred。
+# end
+
+# 2026-08-30, tianqi, stream full-val + EvalGEN real-pool (do not copy 14k x 15 to disk)
+全量官方 val / EvalGEN 用 `scripts/run_full_eval.py`：变换在 Dataset 里做，不落 15 份拷贝。默认打 CLIP-B/L SID aug 的 `best.pt`。
+
+```bash
+# 全量 official_val，先 clean（~1.4 万/模型），再决定要不要 14 档
+CUDA_VISIBLE_DEVICES=1 python scripts/run_full_eval.py --split official_val --conditions clean
+CUDA_VISIBLE_DEVICES=1 python scripts/run_full_eval.py --split official_val --conditions full
+
+# EvalGEN：假图来自 data/evalgen，真图默认 SID validation（on-the-fly parquet）
+CUDA_VISIBLE_DEVICES=1 python scripts/run_full_eval.py --split evalgen --reals sid_val --conditions clean
+# 真图改用 COCO val（和官方 val 同一半）或 WildFake Real（会丢掉 val2017 重叠）
+python scripts/run_full_eval.py --split evalgen --reals coco --conditions clean
+python scripts/run_full_eval.py --split evalgen --reals wildfake --max-fakes-per-gen 200
+```
+
+EvalGEN 的 AUROC 是「该生成器假图 + 所选真图池」。SID val 真图和 CLIP-SID 同域；COCO 真图方便和官方 val 对比。不要用 SID **train** 真图（泄漏）。
 # end
 <!-- end -->
 
