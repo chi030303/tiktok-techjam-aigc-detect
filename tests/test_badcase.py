@@ -216,4 +216,38 @@ def test_manifest_reader_validates(tmp_path):
     empty.write_text('{"label": 1}\n', encoding="utf-8")
     with pytest.raises(SystemExit):
         load_manifest_rows([empty])
+
+
+def test_gallery_script_smoke(tmp_path):
+    """badcase_gallery.py renders a self-contained HTML with embedded thumbs."""
+    root = tmp_path / "val"
+    (root / "real").mkdir(parents=True)
+    (root / "fake").mkdir(parents=True)
+    preds = []
+    for rel, val in [
+        ("real/a.png", 0.9),   # FP
+        ("real/b.png", 0.95),  # FP (worst)
+        ("fake/c.png", 0.2),   # FN
+        ("fake/d.png", 0.8),   # TP
+    ]:
+        p = root / rel
+        make_image(seed=len(rel)).save(p)
+        preds.append({"image_path": str(p), "pred": val})
+    pred_json = tmp_path / "pred.json"
+    pred_json.write_text(json.dumps(preds), encoding="utf-8")
+
+    out = tmp_path / "gallery.html"
+    r = subprocess.run(
+        [sys.executable, "scripts/badcase_gallery.py", "--pred", str(pred_json),
+         "--image-dir", str(root), "--out", str(out), "--max-per-type", "10",
+         "--thumb", "64", "--title", "smoke"],
+        capture_output=True, text=True, cwd=ROOT,
+    )
+    assert r.returncode == 0, r.stderr
+    html_text = out.read_text(encoding="utf-8")
+    assert "data:image/jpeg;base64" in html_text
+    assert html_text.count('class="badge">FP') == 2
+    assert html_text.count('class="badge">FN') == 1
+    # worst first: FP sorted by pred desc
+    assert html_text.find("0.950") < html_text.find("0.900")
 # end
