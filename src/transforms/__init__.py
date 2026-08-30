@@ -8,7 +8,18 @@
   frozen transformed eval set (docs/transforms.md has the full design)
 """
 
-from .manifest import SourceRecord, TransformRecord, read_jsonl, write_jsonl
+from .manifest import (
+    SourceRecord,
+    TransformRecord,
+    # 2026-08-30, tianqi, phash leak helpers for train filtering
+    average_phash,
+    filter_train_rows,
+    is_trainable,
+    phash_collisions,
+    # end
+    read_jsonl,
+    write_jsonl,
+)
 from .spec import (
     OFFICIAL_SETTINGS,
     SETTINGS_BY_KEY,
@@ -23,7 +34,11 @@ __all__ = [
     "Setting",
     "SourceRecord",
     "TransformRecord",
+    "average_phash",
     "derive_seed",
+    "filter_train_rows",
+    "is_trainable",
+    "phash_collisions",
     "read_jsonl",
     "resolve_settings",
     "write_jsonl",

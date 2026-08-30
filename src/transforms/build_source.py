@@ -30,7 +30,17 @@ from pathlib import Path
 
 from PIL import Image
 
-from .manifest import SPLITS, SourceRecord, write_jsonl
+# 2026-08-30, tianqi, family/arch enums + phash for new source rows
+from .manifest import (
+    ARCHES,
+    CONTENT_TYPES,
+    FAMILIES,
+    SPLITS,
+    SourceRecord,
+    average_phash,
+    write_jsonl,
+)
+# end
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
 
@@ -62,6 +72,12 @@ def collect_records(
     fake_names: str = "FAKE,fake,AI,aigc,synthetic,1",
     exts: set[str] | None = None,
     hash_content: bool = False,
+    # 2026-08-30, tianqi, fill family/arch/content_type/phash for new source rows
+    family: str | None = None,
+    arch: str | None = None,
+    content_type: str | None = None,
+    compute_phash: bool = True,
+    # end
 ) -> list[SourceRecord]:
     root = Path(root)
     if split == "train":
@@ -107,16 +123,30 @@ def collect_records(
             lab = label
         with Image.open(path) as im:
             width, height = im.size
+            # 2026-08-30, tianqi, aHash for val-leak audit; skip if --no-phash
+            phash = average_phash(im) if compute_phash else None
+            # end
+        fmt = path.suffix.lower().lstrip(".")
+        is_real = lab == 0
         records.append(
             SourceRecord(
                 image_id=image_id_for(rel, path.stat().st_size, path, hash_content),
                 path=rel,
                 label=lab,
                 source_dataset=dataset,
-                generator=generator,
+                generator=None if is_real else generator,
                 split=split,
                 width=width,
                 height=height,
+                family=None if is_real else family,
+                arch=None if is_real else arch,
+                content_type=(
+                    "real"
+                    if is_real
+                    else (content_type or "full_synthetic")
+                ),
+                original_format=fmt or None,
+                phash=phash,
             )
         )
         n_real += lab == 0
@@ -135,8 +165,19 @@ def main() -> None:
     parser.add_argument("--root", required=True)
     parser.add_argument("--dataset", required=True, help="cifake | sid_set | wildfake | flux_gen | ...")
     parser.add_argument("--split", required=True, choices=list(SPLITS))
-    parser.add_argument("--generator", default=None, help="generator family for fakes, e.g. sd14, flux1-dev")
+    parser.add_argument("--generator", default=None, help="concrete generator for fakes, e.g. sd15, flux, dalle3")
     parser.add_argument("--label", type=int, choices=(0, 1), default=None, help="force label; default: parent dir name")
+    # 2026-08-30, tianqi, ablation columns; reals always stored as null
+    parser.add_argument("--family", default=None, choices=list(FAMILIES), help="t2i | i2i (fakes only)")
+    parser.add_argument("--arch", default=None, choices=list(ARCHES), help="unet | dit | flow | pixel | gan")
+    parser.add_argument(
+        "--content-type",
+        default=None,
+        choices=list(CONTENT_TYPES),
+        help="override; default real vs full_synthetic from label",
+    )
+    parser.add_argument("--no-phash", action="store_true", help="skip 8x8 aHash (faster indexing)")
+    # end
     parser.add_argument("--real-names", default="REAL,real,authentic,nature,0")
     parser.add_argument("--fake-names", default="FAKE,fake,AI,aigc,synthetic,1")
     parser.add_argument("--ext", default=",".join(sorted(IMAGE_EXTS)))
@@ -159,6 +200,10 @@ def main() -> None:
         fake_names=args.fake_names,
         exts=exts,
         hash_content=args.hash_content,
+        family=args.family,
+        arch=args.arch,
+        content_type=args.content_type,
+        compute_phash=not args.no_phash,
     )
     write_jsonl(args.out, records)
     print(f"wrote {len(records)} rows -> {args.out}")

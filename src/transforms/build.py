@@ -115,6 +115,13 @@ def run_build(
                     split=src.split,
                     width=width,
                     height=height,
+                    # 2026-08-30, tianqi, denormalize source audit columns
+                    family=src.family,
+                    arch=src.arch,
+                    content_type=src.content_type,
+                    original_format=src.original_format,
+                    phash=src.phash,
+                    # end
                 )
                 sink.write(json.dumps(asdict(rec), ensure_ascii=False) + "\n")
                 rows += 1
