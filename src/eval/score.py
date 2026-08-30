@@ -76,4 +76,40 @@ def score_predictions(
         "false_negatives": fns,
     }
     return metrics, errors
+
+
+# 2026-08-30, tianqi, stream eval already carries y; skip path join
+def score_paired(
+    preds: list[dict],
+    threshold: float = 0.5,
+    max_errors: int = 50,
+) -> tuple[dict, dict]:
+    if not preds:
+        raise SystemExit("no predictions")
+    y_true = [int(r["y"]) for r in preds]
+    scores = [float(r["pred"]) for r in preds]
+    metrics = binary_metrics(y_true, scores, threshold=threshold)
+    metrics["unmatched"] = 0
+    fps = sorted(
+        [
+            {"image_path": str(r["image_path"]), "pred": float(r["pred"]), "y": int(r["y"])}
+            for r in preds
+            if int(r["y"]) == 0 and float(r["pred"]) >= threshold
+        ],
+        key=lambda r: -r["pred"],
+    )[:max_errors]
+    fns = sorted(
+        [
+            {"image_path": str(r["image_path"]), "pred": float(r["pred"]), "y": int(r["y"])}
+            for r in preds
+            if int(r["y"]) == 1 and float(r["pred"]) < threshold
+        ],
+        key=lambda r: r["pred"],
+    )[:max_errors]
+    errors = {
+        "threshold": threshold,
+        "false_positives": fps,
+        "false_negatives": fns,
+    }
+    return metrics, errors
 # end
