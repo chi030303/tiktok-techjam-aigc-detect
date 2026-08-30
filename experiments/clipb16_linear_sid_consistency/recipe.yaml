@@ -1,0 +1,32 @@
+# 2026-08-30, yun, Exp2 ablation vs clipb16_linear_sid_aug baseline: paired-view consistency loss
+name: clipb16_linear_sid_consistency
+description: Single-variable ablation of clipb16_linear_sid_aug -- each step sees (clean, one-random-official-op) view pair of the same image; loss adds lambda*|logit_A-logit_B| to push clean/corrupted scores together. Frozen CLIP-B/16 + linear head, same as baseline otherwise.
+owner: yun
+
+backbone: clip-vit-base-patch16
+head: linear
+freeze_backbone: true
+input_mode: rgb
+
+consistency:
+  lambda: 0.3
+
+train:
+  datasets:
+    - sid_set
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - official_val
+
+optim:
+  epochs: 3
+  batch_size: 64
+  lr: 0.001
+  num_workers: 4
+
+gpu: "1"
+# end

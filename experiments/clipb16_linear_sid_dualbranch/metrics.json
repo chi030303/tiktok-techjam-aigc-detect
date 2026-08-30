@@ -1,0 +1,42 @@
+{
+  "experiment": "clipb16_linear_sid_dualbranch",
+  "backbone": "clip-vit-base-patch16",
+  "freq_dim": 128,
+  "image_size": 224,
+  "n_train": 140000,
+  "n_eval": 20000,
+  "train_seconds": 8487.3,
+  "best_eval_acc": 0.9934,
+  "final": {
+    "n": 20000,
+    "acc": 0.9934,
+    "precision_fake": 0.9920223374551257,
+    "recall_fake": 0.9948
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.04789256954693368,
+      "n": 20000,
+      "acc": 0.9917,
+      "precision_fake": 0.9899362295735352,
+      "recall_fake": 0.9935
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.020681264230103365,
+      "n": 20000,
+      "acc": 0.9927,
+      "precision_fake": 0.990443957794147,
+      "recall_fake": 0.995
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.017023947316394852,
+      "n": 20000,
+      "acc": 0.9934,
+      "precision_fake": 0.9920223374551257,
+      "recall_fake": 0.9948
+    }
+  ]
+}
