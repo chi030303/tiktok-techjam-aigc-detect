@@ -13,6 +13,7 @@
    `src.transforms.build_source` 产的 manifest，见 [transforms.md](transforms.md) §5）；
 3. 按 **condition × generator × source_dataset** 聚合错误率，直接回答
    「模型在哪类生成器/哪个变换档位上翻车」——误差分析笔记的核心素材。
+4. `badcase_gallery.py` 把错误渲染成可直接翻看的 **HTML 画册**（见下节）。
 
 ## 用法
 
@@ -49,6 +50,43 @@ python scripts/run_badcase.py --pred outputs/pred_evalgen.json \
 最伤用户信任的那批）与 `worst_fn`（置信度最低的漏检漏网），外加 `binary_metrics`
 （acc/auroc/precision/recall/fpr，复用 `src.eval.metrics`）。
 
+## 画册：肉眼直接看 bad case（`scripts/badcase_gallery.py`）
+
+把 pred JSON 渲染成**自包含 HTML 画册**——FP/FN 分区、按置信度排序（最糟的
+排最前）、缩略图 base64 内嵌；单文件产物，scp 回本地浏览器打开即可，不需要
+服务器在线。
+
+```bash
+# 服务器实战：compare_spec 里某模型 clean 条件的 bad case（注意 --predict-root）
+python scripts/badcase_gallery.py \
+    --pred /workspace/experiments/compare_spec/official_val/sid_dinov2/pred_clean.json \
+    --split official_val \
+    --predict-root /workspace/experiments/compare_spec/official_val/images/clean \
+    --condition clean --max-per-type 60 \
+    --out /workspace/experiments/yun_eval/galleries/sid_dinov2_clean.html
+
+# 拉回本地（服务器地址一律用占位符，真实 IP/端口/账号不进仓库）
+scp -P <ssh端口> <user>@<gpu服务器>:/workspace/experiments/yun_eval/galleries/*.html .
+```
+
+| 参数 | 说明 |
+|---|---|
+| `--pred` / `--out` | 预测 JSON / 输出 HTML（必填） |
+| `--split` / `--image-dir` | 标签来源，二选一（与 run_badcase 同一套） |
+| `--predict-root` | **最常见坑**：pred 路径的根目录——predict.py 跑在哪个输入目录就指哪个，不传默认 = split 根目录。对 run_eval 物化树（`images/jpeg_q50/…`）跑的预测**必须**传物化目录，否则 `no predictions matched labels`。缩略图也按它做候选回退（raw → `predict_root`/rel → split 根/rel） |
+| `--manifest` | source manifest JSONL，传了卡片带 generator 元数据 |
+| `--condition` / `--threshold` | 条件标签 / FP-FN 判定阈值（默认 0.5） |
+| `--max-images` / `--seed` | 平衡抽样（正整数；0 或负数直接报错，两个 badcase CLI 语义一致） |
+| `--max-per-type` / `--thumb` | 每类最多画几张（默认 60）/ 缩略图最长边（默认 384） |
+
+产物：单文件 HTML。FP 区（真图误判为 AI，红框，置信度最高的排最前）+ FN 区
+（假图漏检，橙框，置信度最低的排最前），卡片带 pred、标签、条件、generator、
+完整路径；超出 `--max-per-type` 的只计数不渲染，计数显示在区块标题。
+
+**缩略图缺失不会静默**：某张图打不开（物化树被清理、路径失效等）就渲染占位符，
+stdout 与 HTML meta 行都带 `thumbnails ok/shown` 计数；**全部缺失时额外打 stderr
+告警**，先检查 `--predict-root` 与文件是否还在。
+
 ## 条件命名对照（manifest transform_key ↔ robustness condition）
 
 manifest 侧（`src/transforms/spec.py` 的 transform_key）与 robustness 表侧
@@ -79,4 +117,5 @@ manifest 侧（`src/transforms/spec.py` 的 transform_key）与 robustness 表�
   manifest 是相对路径（或反过来）也能挂上；同文件但路径标识不同（硬链/跨挂载）
   的极端情形匹配不到，计入 `unmatched_metadata` 并标 `unknown`——该计数同时
   打在 CLI 汇总行里，比例异常时先查 manifest 路径形式。
-- 目前不带 per-image 可视化（Grad-CAM 之类），如误差分析需要再议。
+- 画册（上节）提供原始图浏览；模型可解释性可视化（Grad-CAM/频域图）尚未做，
+  误差归因目前靠人工看图 + 分组统计。
