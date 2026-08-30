@@ -30,7 +30,7 @@ from PIL import Image
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from src.eval.badcase import join_predictions
+from src.eval.badcase import join_predictions, load_manifest_rows
 from src.eval.labels import load_labeled_dir, load_split, subsample_balanced
 
 # end
