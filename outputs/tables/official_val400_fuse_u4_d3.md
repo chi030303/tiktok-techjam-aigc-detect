@@ -1,0 +1,17 @@
+| model | condition | n | acc | auroc | precision_fake | recall_fake | fpr |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| fuse_unfreeze4_D3_mix | clean | 400 | 0.8875 | 0.9950 | 0.9936 | 0.7800 | 0.0050 |
+| fuse_unfreeze4_D3_mix | jpeg_q90 | 400 | 0.8950 | 0.9946 | 0.9938 | 0.7950 | 0.0050 |
+| fuse_unfreeze4_D3_mix | jpeg_q70 | 400 | 0.8775 | 0.9922 | 1.0000 | 0.7550 | 0.0000 |
+| fuse_unfreeze4_D3_mix | jpeg_q50 | 400 | 0.9000 | 0.9879 | 0.9878 | 0.8100 | 0.0100 |
+| fuse_unfreeze4_D3_mix | jpeg_q30 | 400 | 0.8850 | 0.9840 | 0.9812 | 0.7850 | 0.0150 |
+| fuse_unfreeze4_D3_mix | blur_s05 | 400 | 0.8850 | 0.9958 | 1.0000 | 0.7700 | 0.0000 |
+| fuse_unfreeze4_D3_mix | blur_s10 | 400 | 0.8725 | 0.9955 | 0.9934 | 0.7500 | 0.0050 |
+| fuse_unfreeze4_D3_mix | blur_s20 | 400 | 0.8525 | 0.9885 | 0.9862 | 0.7150 | 0.0100 |
+| fuse_unfreeze4_D3_mix | resize_s05 | 400 | 0.8675 | 0.9943 | 0.9933 | 0.7400 | 0.0050 |
+| fuse_unfreeze4_D3_mix | resize_s025 | 400 | 0.8475 | 0.9838 | 0.9860 | 0.7050 | 0.0100 |
+| fuse_unfreeze4_D3_mix | noise_s002 | 400 | 0.8800 | 0.9917 | 0.9935 | 0.7650 | 0.0050 |
+| fuse_unfreeze4_D3_mix | noise_s005 | 400 | 0.8725 | 0.9892 | 0.9934 | 0.7500 | 0.0050 |
+| fuse_unfreeze4_D3_mix | noise_s010 | 400 | 0.8600 | 0.9892 | 0.9932 | 0.7250 | 0.0050 |
+| fuse_unfreeze4_D3_mix | jitter_p20 | 400 | 0.8725 | 0.9936 | 1.0000 | 0.7450 | 0.0000 |
+| fuse_unfreeze4_D3_mix | crop_p80 | 400 | 0.8200 | 0.9933 | 1.0000 | 0.6400 | 0.0000 |

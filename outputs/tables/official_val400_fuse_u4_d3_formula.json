@@ -1,0 +1,11 @@
+{
+  "fuse_unfreeze4_D3_mix": {
+    "auc_clean": 0.994975,
+    "auc_robust": 0.9909705357142856,
+    "n_robust": 14,
+    "n_robust_expected": 14,
+    "complete": true,
+    "formula": 0.9929727678571428,
+    "model": "fuse_unfreeze4_D3_mix"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "D3_mix": {
+    "auc_clean": 0.99531275,
+    "auc_robust": 0.9935547946428571,
+    "n_robust": 14,
+    "n_robust_expected": 14,
+    "complete": true,
+    "formula": 0.9944337723214285,
+    "model": "D3_mix"
+  }
+}

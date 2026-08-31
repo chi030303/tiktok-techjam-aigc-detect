@@ -1,0 +1,2 @@
+model,split,condition,n,n_real,n_fake,acc,auroc,precision_fake,recall_fake,fpr,mean_pred,threshold
+d3_unfreeze4,evalgen_sidreals,clean,65298,10000,55298,0.8232,0.9961,0.9998,0.7914,0.0009,0.6653,0.5000

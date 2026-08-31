@@ -1,0 +1,16 @@
+model,split,condition,n,n_real,n_fake,acc,auroc,precision_fake,recall_fake,fpr,mean_pred,threshold
+fuse_unfreeze4_D3_mix,official_val,clean,400,200,200,0.8875,0.9950,0.9936,0.7800,0.0050,0.3919,0.5000
+fuse_unfreeze4_D3_mix,official_val,jpeg_q90,400,200,200,0.8950,0.9946,0.9938,0.7950,0.0050,0.3960,0.5000
+fuse_unfreeze4_D3_mix,official_val,jpeg_q70,400,200,200,0.8775,0.9922,1.0000,0.7550,0.0000,0.3787,0.5000
+fuse_unfreeze4_D3_mix,official_val,jpeg_q50,400,200,200,0.9000,0.9879,0.9878,0.8100,0.0100,0.4075,0.5000
+fuse_unfreeze4_D3_mix,official_val,jpeg_q30,400,200,200,0.8850,0.9840,0.9812,0.7850,0.0150,0.4018,0.5000
+fuse_unfreeze4_D3_mix,official_val,blur_s05,400,200,200,0.8850,0.9958,1.0000,0.7700,0.0000,0.3862,0.5000
+fuse_unfreeze4_D3_mix,official_val,blur_s10,400,200,200,0.8725,0.9955,0.9934,0.7500,0.0050,0.3767,0.5000
+fuse_unfreeze4_D3_mix,official_val,blur_s20,400,200,200,0.8525,0.9885,0.9862,0.7150,0.0100,0.3596,0.5000
+fuse_unfreeze4_D3_mix,official_val,resize_s05,400,200,200,0.8675,0.9943,0.9933,0.7400,0.0050,0.3708,0.5000
+fuse_unfreeze4_D3_mix,official_val,resize_s025,400,200,200,0.8475,0.9838,0.9860,0.7050,0.0100,0.3609,0.5000
+fuse_unfreeze4_D3_mix,official_val,noise_s002,400,200,200,0.8800,0.9917,0.9935,0.7650,0.0050,0.3807,0.5000
+fuse_unfreeze4_D3_mix,official_val,noise_s005,400,200,200,0.8725,0.9892,0.9934,0.7500,0.0050,0.3813,0.5000
+fuse_unfreeze4_D3_mix,official_val,noise_s010,400,200,200,0.8600,0.9892,0.9932,0.7250,0.0050,0.3547,0.5000
+fuse_unfreeze4_D3_mix,official_val,jitter_p20,400,200,200,0.8725,0.9936,1.0000,0.7450,0.0000,0.3768,0.5000
+fuse_unfreeze4_D3_mix,official_val,crop_p80,400,200,200,0.8200,0.9933,1.0000,0.6400,0.0000,0.3246,0.5000

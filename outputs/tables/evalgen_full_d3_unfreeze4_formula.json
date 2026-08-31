@@ -1,0 +1,11 @@
+{
+  "d3_unfreeze4": {
+    "auc_clean": 0.9961138097218706,
+    "auc_robust": null,
+    "n_robust": 0,
+    "n_robust_expected": 14,
+    "complete": false,
+    "formula": 0.9961138097218706,
+    "model": "d3_unfreeze4"
+  }
+}
