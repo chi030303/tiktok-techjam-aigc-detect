@@ -90,6 +90,76 @@ python scripts/run_eval.py score --pred ./outputs/pred.json --split official_val
 Tables land in `outputs/tables/` (csv / md / json). Full transform list and hold-out rules: [docs/data.md](docs/data.md).
 <!-- end -->
 
+## Results
+
+**Submission model: `sid_dinov2`** — frozen DINOv2 ViT-L/14 backbone (~0.3B params, well under the 2B limit) + a 1,025-param linear head trained on SID_Set. Checkpoint: [release `v0.1-model`](https://github.com/chi030303/tiktok-techjam-aigc-detect/releases/tag/v0.1-model) (5.95 KB).
+
+Robustness on the official demo val (COCO val2017 + DALL·E Advanced, n=400 balanced, AUROC):
+
+| clean | jpeg q90 | q70 | q50 | q30 | blur σ0.5 | σ1.0 | σ2.0 | resize 0.5× | 0.25× | noise σ0.02 | σ0.05 | σ0.10 | jitter | crop 80% |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0.904 | 0.911 | 0.881 | 0.872 | 0.889 | 0.905 | 0.905 | 0.905 | 0.902 | 0.872 | 0.911 | 0.899 | 0.887 | 0.905 | 0.902 |
+
+Robust macro-average over the 14 transformed conditions: **0.897** (min 0.872). On the
+held-out **EvalGEN** benchmark (55,298 fakes from 5 unseen generator families + 10K real
+pool): **AUROC 0.964**, recall 0.888 — best-in-team on the hardest family (Nova, recall
+0.777). Full error analysis and per-generator breakdown:
+[docs/error_analysis.md](docs/error_analysis.md).
+
+## Reproduce
+
+End-to-end, verified on a fresh `MODELS_ROOT` (no pre-existing weights):
+
+```bash
+# 1. environment
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# 2. backbone (~1.2 GB DINOv2-L; or --only the one you need)
+python scripts/download_backbones.py --only dinov2-vit-large-patch14
+
+# 3. checkpoint (5.95 KB linear head)
+gh release download v0.1-model -R chi030303/tiktok-techjam-aigc-detect -p sid_dinov2_best.pt -O checkpoints/sid_dinov2_best.pt
+
+# 4. inference: directory in, JSON out
+python predict.py <image_dir> out.json --ckpt checkpoints/sid_dinov2_best.pt
+```
+
+Sanity check from our run (2 COCO reals, 2 DALL·E fakes): reals scored 0.12 / 0.12,
+fakes 0.79 / 0.92. The checkpoint stores only `{head, backbone-name}` — the backbone is
+resolved from `models/`, so keep step 2 and step 3 together.
+
+Retraining from scratch: recipes live under `experiments/<name>/recipe.yaml`
+(e.g. `dinov2l_linear_sid`), run with
+`python scripts/run_experiment.py experiments/<name>/recipe.yaml`; ablation
+results and the model-selection matrix are in [docs/error_analysis.md](docs/error_analysis.md).
+
+## Limitations
+
+- **Linear-probe ceiling**: the backbone is frozen; accuracy is bounded by DINOv2
+  features. Partial unfreezing and MLP heads were ablated and did not beat the probe
+  on the demo val.
+- **Scores are not calibrated**: at threshold 0.5 `sid_dinov2` is miss-heavy
+  (FP 10 / FN 88). `pred` is a score — downstream should pick the operating point by
+  their false-accusation budget (see [docs/error_analysis.md](docs/error_analysis.md)).
+- **Generator coverage**: Nova and Infinity remain hard (recall 0.45–0.74 on EvalGEN
+  across all our models). The demo val contains only DALL·E fakes.
+- **Image modality only**, English-only project scope; evaluation subsets are
+  1024²-heavy, so very small thumbnails are under-tested.
+
+## Team & contributions
+
+| Member | Focus |
+|---|---|
+| chi030303 (tianqi) | Tech lead: training/eval infra, recipes, model & data ablations |
+| Jasminetothemoon (Zyun) | Official transforms & manifests, bad-case pipeline + gallery, error analysis |
+| kiki | Training runs, EvalGEN streaming eval, feature cache |
+| James | Dataset research & selection |
+
+*(names/handles — please double-check before Devpost submit)*
+
+Repo must be **public** by 1 Sep 12:00 GMT+8 (Settings → General → Danger zone).
+
 ## Team workflow
 
 - **Daily handbook** (SSH, tmux, venv, GPUs): [docs/dev.md](docs/dev.md)
