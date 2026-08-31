@@ -1,0 +1,11 @@
+{
+  "unfreeze_first4": {
+    "auc_clean": 0.9743875,
+    "auc_robust": 0.9730883928571429,
+    "n_robust": 14,
+    "n_robust_expected": 14,
+    "complete": true,
+    "formula": 0.9737379464285714,
+    "model": "unfreeze_first4"
+  }
+}

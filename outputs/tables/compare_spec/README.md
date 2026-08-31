@@ -20,6 +20,8 @@ CLIP-L SID-aug **0.995 is EvalGEN clean AUROC**, not official formula. Official 
 6. D3 (SID 14万, replace 9622 FLUX with self-built + SDXL UNet + ADM/DDPM): **0.978** official 400, best EvalGEN Infinity/NOVA.
 7. D3 dualbranch (same mix, frozen CLIP-B RGB + highpass CNN): **0.983** official 400, EvalGEN 0.995. Beats frozen D3, still loses to last4 and fuse.
 8. Fuse last4 + D3: **0.993** official 400, EvalGEN 0.997. Best dual-metric if two ckpts are allowed.
+9. D3 + last4 **trained together**: official 400 **0.976** (drop vs last4). EvalGEN 400/gen×15 formula **0.9955** is the best unseen-robust screen so far — still do not submit it; contest score is DALL·E.
+
 
 ## Ranking (400 formula unless n=13843)
 
@@ -32,8 +34,10 @@ CLIP-L SID-aug **0.995 is EvalGEN clean AUROC**, not official formula. Official 
 | D3 dualbranch | D3 mix + RGB + highpass CNN | **0.983** | 0.988 | **0.948** |
 | CLIP-L unfreeze4 | SID 14万, last 4 of 24 | 0.980 | 0.981 | 0.883 |
 | D3 mix | frozen CLIP-B, SID + 9622 mix-in | **0.978** | 0.985 | **0.940** |
-| CLIP-L SID-aug | frozen CLIP-L | 0.976 | 0.976 | 0.885 |
 | CLIP-B unfreeze4@336 | CLIP-B last-4 @ 336 | 0.977 | 0.981 | 0.823 |
+| D3 + last4 train | D3 mix + unfreeze last 4 | 0.976 | 0.984 | — |
+| CLIP-L SID-aug | frozen CLIP-L | 0.976 | 0.976 | 0.885 |
+| CLIP-B first-4 unfreeze | encoder blocks 0–3 | 0.974 | 0.974 | — |
 | CLIP-B SID-aug | frozen CLIP-B | 0.970 | 0.969 | 0.900 |
 | DINOv2 CIFAKE | CIFAKE | 0.786 | 0.779 | 0.623 |
 | D1 8k | 8k FLUX, no aug | 0.734 full | 0.737 | 0.676 |
@@ -72,6 +76,7 @@ Train never sees DALL·E or EvalGEN. **NOVA** is the stress-test column (hardest
 | D3 dualbranch | 0.988 | 0.995 | 0.987 | 0.994 | 0.999 | 0.997 | 0.999 |
 | CLIP-L unfreeze4 | 0.981 | 0.991 | 0.962 | 0.993 | 1.000 | 1.000 | 1.000 |
 | D3 mix (frozen CLIP-B) | 0.985 | **0.995** | **0.988** | **0.994** | 0.999 | 0.997 | 0.999 |
+| D3 + last4 train | 0.984 | 0.996 | 0.992 | 0.991 | 1.000 | 0.999 | 0.999 |
 | CLIP-L SID-aug | 0.976 | **0.995** | 0.981 | 0.998 | 1.000 | 0.999 | 1.000 |
 | CLIP-B SID-aug | 0.969 | 0.992 | 0.970 | 0.992 | 1.000 | 0.999 | 0.999 |
 | CLIP-B unfreeze4@336 | 0.981 | 0.954 | 0.868 | 0.904 | 0.999 | 0.998 | 1.000 |
@@ -81,12 +86,26 @@ Train never sees DALL·E or EvalGEN. **NOVA** is the stress-test column (hardest
 | Model | AUROC | Infinity rec | NOVA rec |
 |---|---:|---:|---:|
 | fuse last4+D3 | **0.997** | 0.672 | 0.557 |
+| D3 + last4 train | 0.996 | 0.606 | 0.578 |
 | D3 mix | **0.995** | **0.931** | **0.857** |
 | D3 dualbranch | 0.995 | 0.916 | 0.832 |
 | CLIP-L SID | 0.995 | 0.905 | 0.649 |
 | CLIP-B SID | 0.992 | 0.868 | 0.711 |
 | CLIP-B unfreeze4 | 0.989 | 0.570 | 0.487 |
 | unfreeze4+336 | 0.954 | 0.289 | 0.267 |
+
+## EvalGEN 400/gen × 15-cond (unseen robust screen)
+
+Same 14 official keys + clean. n=4000 (400 fakes/gen × 5 gens + 2000 SID-val reals). **Not the contest score.** CLIP-L SID and fuse still running on GPU1 (then phase2 full-n). D2 waits behind this job.
+
+| Model | formula | clean AUROC | robust |
+|---|---:|---:|---:|
+| D3 + last4 train | **0.9955** | 0.9957 | 0.9953 |
+| D3 mix | 0.9944 | 0.9953 | 0.9936 |
+| CLIP-B SID-aug | 0.9913 | 0.9915 | 0.9910 |
+| CLIP-B unfreeze4 | 0.9887 | 0.9889 | 0.9885 |
+
+D3+last4 wins this unseen-robust screen and loses official DALL·E (0.976 vs last4 0.990). Keep last4 / fuse as submit.
 
 ## Bad cases
 

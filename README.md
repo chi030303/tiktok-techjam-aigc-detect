@@ -103,11 +103,12 @@ Score is **0.50×AUC_clean + 0.50×AUC_robust** (14 transform keys). Acc@0.5 is 
 | CLIP-B unfreeze4 | **0.990** | 0.991 | 0.848 | 0.989 |
 | D3 dualbranch | 0.983 | 0.988 | 0.948 | 0.995 |
 | D3 mix (frozen CLIP-B) | 0.978 | 0.985 | 0.940 | 0.995 |
+| D3 + last4 train | 0.976 | 0.984 | — | 0.996 |
 | CLIP-L SID-aug | 0.976 | 0.976 | 0.885 | 0.995 |
 | CLIP-B SID-aug | 0.970 | 0.969 | 0.900 | 0.992 |
 | SID DINOv2 frozen | 0.900 | 0.904 | — | 0.964 |
 
-SID dualbranch was 0.966 (drop). D3 dualbranch **0.983** beats frozen D3, still loses to last4/fuse. Full 15-condition tables: [outputs/tables/compare_spec/README.md](outputs/tables/compare_spec/README.md). Error galleries: [docs/badcase-galleries.md](docs/badcase-galleries.md). The DINOv2 write-up in [docs/error_analysis.md](docs/error_analysis.md) is a frozen-head ablation, not the contest submit.
+SID dualbranch was 0.966 (drop). D3 dualbranch **0.983** beats frozen D3, still loses to last4/fuse. D3+last4 **train** stack is best on EvalGEN 400/gen×15 (**0.9955**) but official 400 is **0.976** — not a submit. Full 15-condition tables: [outputs/tables/compare_spec/README.md](outputs/tables/compare_spec/README.md). Error galleries: [docs/badcase-galleries.md](docs/badcase-galleries.md). The DINOv2 write-up in [docs/error_analysis.md](docs/error_analysis.md) is a frozen-head ablation, not the contest submit.
 <!-- end -->
 
 ## Reproduce
