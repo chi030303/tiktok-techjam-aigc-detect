@@ -1,8 +1,9 @@
 # Content Pattern Analysis
 
+<!-- 2026-09-01, tianqi, contest error note stays docs/error_analysis.md; this is eval-only slices -->
 Evaluation-only pipeline for finding image properties associated with model
-false positives and false negatives. It supports the competition's feature
-engineering, evaluation design, error analysis, and explainability scope.
+false positives and false negatives. Contest write-up: [error_analysis.md](error_analysis.md).
+<!-- end -->
 
 This tool reports **correlations**, not causal AIGC fingerprints. Never copy
 official-val or EvalGEN images into training, perform hard-negative mining on

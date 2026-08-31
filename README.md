@@ -5,7 +5,7 @@ Image-level detector for real vs AI-generated images (`pred` = P(AIGC)), robust 
 **Contest score:** `0.50×AUC_clean + 0.50×AUC_robust`. Acc@0.5 is not the score.  
 **Submit:** CLIP-B/16 **last-4** (formula **0.990**) or **fuse last4+D3** (**0.993**) if two checkpoints are allowed.
 
-Contest write-ups: [docs/DELIVERABLES.md](docs/DELIVERABLES.md) · [Devpost text](docs/devpost.md) · [Robustness](docs/robustness.md) · [Error analysis](docs/error_analysis.md)
+Contest write-ups: [docs/DELIVERABLES.md](docs/DELIVERABLES.md) · [Devpost text](docs/devpost.md) · [Robustness](docs/robustness.md) (clean vs 14 transforms) · [Error analysis](docs/error_analysis.md) · [Content patterns](docs/content-pattern-analysis.md)
 
 **Do not commit datasets, checkpoints, or API keys.** Weights and images live on disk / Hugging Face / cloud storage. See [docs/data.md](docs/data.md).
 
@@ -14,7 +14,7 @@ Contest write-ups: [docs/DELIVERABLES.md](docs/DELIVERABLES.md) · [Devpost text
 | In git | Not in git (download locally) |
 |---|---|
 | Training / eval / `predict.py` scripts | Raw images (`data/`) |
-| Small CSV robustness tables | `*.pth` / `*.safetensors` / CLIP weights |
+| Small CSV robustness tables + `docs/robustness/` figures | `*.pth` / `*.safetensors` / CLIP weights |
 | Docs, SOP, issue templates | Official demo set (COCO val2017 + DALL·E Advanced) |
 | `requirements.txt` | `.env`, Vast credentials |
 
@@ -164,7 +164,7 @@ Frozen SID DINOv2 (ablation ~0.90) remains in release `v0.1-model` if you need t
 |---|---|
 | kiki (`chi030303`) | Training/eval pipeline, CLIP-B last-4 submit, D3/D4/D5 mix-ins, last4+mix fuse, EvalGEN (incl. Nova), contest write-ups |
 | yun | Model ablations (backbone, last-4 vs first-4, CLIP-L, 336, dual-branch, consistency) |
-| samily | Error / bad-case **analysis**; data-ablation design (A/D axes) |
+| samily | Error / bad-case **analysis** (`analyze_badcase_galleries.py`, content-pattern slices); data-ablation design (A/D axes) |
 | zhengcongyun | Bad-case **collection** pipeline; official robustness transforms |
 | James | ComfyUI data generation (self-built t2i / i2i) |
 # end

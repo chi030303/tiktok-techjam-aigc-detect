@@ -1,0 +1,22 @@
+<!-- 2026-09-01, tianqi, local viewer for robustness figures -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Robustness — clean vs 14 transforms</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; max-width: 1100px; margin: 24px auto; color: #0F172A; }
+    h1 { font-size: 22px; }
+    p { color: #64748B; }
+    img { width: 100%; height: auto; border: 1px solid #E2E8F0; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Robustness evaluation — clean vs transformed</h1>
+  <p>Official val 400 (200 COCO real / 200 DALL·E Advanced). Score = 0.50×AUC_clean + 0.50× mean of 14 transform AUROCs.</p>
+  <p><img src="clean_vs_transforms.png" alt="Clean vs 14 transforms"/></p>
+  <p><img src="clean_vs_robust.svg" alt="Grouped bars"/></p>
+  <p><img src="auroc_15cond.svg" alt="15-condition AUROC"/></p>
+</body>
+</html>
+<!-- end -->

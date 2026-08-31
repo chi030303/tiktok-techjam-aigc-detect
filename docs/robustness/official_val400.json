@@ -1,0 +1,76 @@
+{
+  "split": "official_val",
+  "n": 400,
+  "n_real": 200,
+  "n_fake": 200,
+  "seed": 0,
+  "score": "0.50*AUC_clean + 0.50*mean(14 transform AUROCs)",
+  "conditions": [
+    "clean",
+    "jpeg_q90",
+    "jpeg_q70",
+    "jpeg_q50",
+    "jpeg_q30",
+    "blur_s05",
+    "blur_s10",
+    "blur_s20",
+    "resize_s05",
+    "resize_s025",
+    "noise_s002",
+    "noise_s005",
+    "noise_s010",
+    "jitter_p20",
+    "crop_p80"
+  ],
+  "condition_labels": [
+    "clean",
+    "J90",
+    "J70",
+    "J50",
+    "J30",
+    "b0.5",
+    "b1",
+    "b2",
+    "x0.5",
+    "x0.25",
+    "n0.02",
+    "n0.05",
+    "n0.10",
+    "jitter",
+    "crop80"
+  ],
+  "models": {
+    "fuse last4+D3": {
+      "color": "#E11D48",
+      "formula": 0.993,
+      "auc_clean": 0.995,
+      "auc_robust": 0.991,
+      "acc_clean": 0.888,
+      "auroc": [0.995, 0.995, 0.992, 0.988, 0.984, 0.996, 0.996, 0.989, 0.994, 0.984, 0.992, 0.989, 0.989, 0.994, 0.993]
+    },
+    "CLIP-B last-4": {
+      "color": "#1D4ED8",
+      "formula": 0.990,
+      "auc_clean": 0.991,
+      "auc_robust": 0.988,
+      "acc_clean": 0.848,
+      "auroc": [0.991, 0.991, 0.988, 0.987, 0.983, 0.992, 0.993, 0.985, 0.991, 0.980, 0.991, 0.987, 0.988, 0.990, 0.991]
+    },
+    "D3 mix": {
+      "color": "#0F766E",
+      "formula": 0.978,
+      "auc_clean": 0.985,
+      "auc_robust": 0.972,
+      "acc_clean": 0.940,
+      "auroc": [0.985, 0.984, 0.978, 0.954, 0.944, 0.985, 0.986, 0.973, 0.984, 0.958, 0.974, 0.969, 0.967, 0.980, 0.971]
+    },
+    "CLIP-B SID-aug": {
+      "color": "#64748B",
+      "formula": 0.970,
+      "auc_clean": 0.969,
+      "auc_robust": 0.970,
+      "acc_clean": 0.900,
+      "auroc": [0.969, 0.971, 0.968, 0.968, 0.964, 0.972, 0.978, 0.978, 0.979, 0.973, 0.961, 0.971, 0.976, 0.963, 0.955]
+    }
+  }
+}

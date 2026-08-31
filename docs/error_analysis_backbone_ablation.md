@@ -1,8 +1,10 @@
 # Backbone Ablation Error Analysis Note
 
-> **Status:** Provisional backbone-ablation note. Replace with the last4/fuse analysis before final submission.
-> **Model scope:** Frozen CLIP backbone SID ablation; this is not the final last4/fuse submission analysis.
+<!-- 2026-09-01, tianqi, contest last4/fuse note is docs/error_analysis.md; this file stays frozen-SID gallery stats -->
+> **Status:** Frozen CLIP-B/L SID gallery stats (full official val, clean). Contest submit analysis is [error_analysis.md](error_analysis.md) (last-4 / fuse).
+> **Model scope:** Frozen CLIP backbone SID ablation; not the last4/fuse submit.
 > **Data scope:** official demonstration validation, clean only; 5000 real + 8843 fake; threshold=0.50.
+<!-- end -->
 
 ## 1. Quantitative summary
 
