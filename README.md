@@ -1,8 +1,13 @@
 # TikTok TechJam 2026 — AIGC Image Detection
 
-Image-level detector for real vs AI-generated images, with robustness under JPEG, blur, resize, noise, color jitter, and center crop.
+Image-level detector for real vs AI-generated images (`pred` = P(AIGC)), robust to JPEG, blur, resize, noise, color jitter, and center crop.
 
-**Do not commit datasets, checkpoints, or API keys.** This repo is code + docs only. Weights and images live on disk / Hugging Face / cloud storage. See [docs/data.md](docs/data.md).
+**Contest score:** `0.50×AUC_clean + 0.50×AUC_robust`. Acc@0.5 is not the score.  
+**Submit:** CLIP-B/16 **last-4** (formula **0.990**) or **fuse last4+D3** (**0.993**) if two checkpoints are allowed.
+
+Contest write-ups: [docs/DELIVERABLES.md](docs/DELIVERABLES.md) · [Devpost text](docs/devpost.md) · [Robustness](docs/robustness.md) · [Error analysis](docs/error_analysis.md)
+
+**Do not commit datasets, checkpoints, or API keys.** Weights and images live on disk / Hugging Face / cloud storage. See [docs/data.md](docs/data.md).
 
 ## What this repo contains vs what it does not
 
@@ -19,6 +24,8 @@ Image-level detector for real vs AI-generated images, with robustness under JPEG
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+# inference / train also need:
+pip install torch torchvision transformers
 cp .env.example .env   # add HF_TOKEN locally if needed
 
 # smoke: dummy scores, no weights required
@@ -92,71 +99,77 @@ Tables land in `outputs/tables/` (csv / md / json). Full transform list and hold
 
 ## Results
 
-<!-- 2026-08-31, tianqi, contest ranking uses official 0.50×AUC_clean+0.50×AUC_robust; last-night README had SID DINOv2 as submit -->
-**Submit (single ckpt): CLIP-B/16 last-4 unfreeze** — SID 14万 + official online aug. Official val 400 formula **0.990** (full 13843 **0.989**). If two checkpoints are allowed: **mean-logit fuse** of last4 + D3 mix = **0.993**.
-
-Score is **0.50×AUC_clean + 0.50×AUC_robust** (14 transform keys). Acc@0.5 is not the score.
+<!-- 2026-08-31, tianqi, contest ranking last4 0.990 / fuse 0.993 -->
+**Single ckpt: CLIP-B/16 last-4** — SID ~140k + official online aug, unfreeze last 4 vision blocks. Official val 400 formula **0.990** (full 13,843 **0.989**).  
+<!-- 2026-08-31, tianqi, fuse D5 matches D3 fuse on official; D5 alone does not -->
+**Two ckpts:** mean-logit fuse of last-4 + D3 mix = **0.993**. Fuse last-4 + **D5** (D3∪D4 mix) is also **0.993** — D5 alone is only 0.975, so the story is complementary heads, not “more mix-in always wins.”
+# end
 
 | model | formula 400 | DALL·E AUC | Acc@0.5 | EvalGEN AUROC |
 |---|---:|---:|---:|---:|
 | fuse last4+D3 | **0.993** | 0.995 | 0.888 | **0.997** |
-| CLIP-B unfreeze4 | **0.990** | 0.991 | 0.848 | 0.989 |
+| fuse last4+D5 | **0.993** | 0.995 | — | — |
+| CLIP-B last-4 | **0.990** | 0.991 | 0.848 | 0.989 |
 | D3 dualbranch | 0.983 | 0.988 | 0.948 | 0.995 |
 | D3 mix (frozen CLIP-B) | 0.978 | 0.985 | 0.940 | 0.995 |
-| D3 + last4 train | 0.976 | 0.984 | — | 0.996 |
 | CLIP-L SID-aug | 0.976 | 0.976 | 0.885 | 0.995 |
 | CLIP-B SID-aug | 0.970 | 0.969 | 0.900 | 0.992 |
 | SID DINOv2 frozen | 0.900 | 0.904 | — | 0.964 |
 
-SID dualbranch was 0.966 (drop). D3 dualbranch **0.983** beats frozen D3, still loses to last4/fuse. D3+last4 **train** stack is best on EvalGEN 400/gen×15 (**0.9955**) but official 400 is **0.976** — not a submit. Full 15-condition tables: [outputs/tables/compare_spec/README.md](outputs/tables/compare_spec/README.md). Error galleries: [docs/badcase-galleries.md](docs/badcase-galleries.md). The DINOv2 write-up in [docs/error_analysis.md](docs/error_analysis.md) is a frozen-head ablation, not the contest submit.
-<!-- end -->
+15-condition table and Nova split: [docs/robustness.md](docs/robustness.md). Full grid: [outputs/tables/compare_spec/README.md](outputs/tables/compare_spec/README.md). Errors: [docs/error_analysis.md](docs/error_analysis.md).
+# end
 
 ## Reproduce
 
-Contest submit is **CLIP-B last-4**, recipe `experiments/clipb16_linear_sid_unfreeze4/`. Checkpoint is **not** the v0.1 DINOv2 head.
+Need GPU + CLIP-B weights. Official val / EvalGEN stay **out of training**.
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+pip install torch torchvision transformers
 python scripts/download_backbones.py --only clip-vit-base-patch16
-python predict.py <image_dir> out.json --ckpt /workspace/experiments/clipb16_linear_sid_unfreeze4/ckpts/best.pt
+
+# single submit ckpt
+python predict.py <image_dir> out.json \
+  --ckpt experiments/clipb16_linear_sid_unfreeze4/ckpts/best.pt
+
+# optional fuse (last4 + D3)
+python predict.py <image_dir> out.json \
+  --ckpt experiments/clipb16_linear_sid_unfreeze4/ckpts/best.pt \
+  --ckpt-b experiments/clipb16_linear_sid_d3_mix/ckpts/best.pt
 ```
 
-Frozen SID DINOv2 (ablation, formula ~0.90) is still in release `v0.1-model` if you need that write-up:
+Retrain last-4: `python scripts/run_experiment.py experiments/clipb16_linear_sid_unfreeze4/recipe.yaml --train`  
+D3 mix: `experiments/clipb16_linear_sid_d3_mix/recipe.yaml`. Demo val robustness:
 
 ```bash
-python scripts/download_backbones.py --only dinov2-vit-large-patch14
-gh release download v0.1-model -R chi030303/tiktok-techjam-aigc-detect -p sid_dinov2_best.pt -O checkpoints/sid_dinov2_best.pt
-python predict.py <image_dir> out.json --ckpt checkpoints/sid_dinov2_best.pt
+python scripts/run_full_eval.py --split official_val --conditions full --max-images 400 --seed 0 \
+  --ckpt last4=experiments/clipb16_linear_sid_unfreeze4/ckpts/best.pt
 ```
 
-Retraining: `python scripts/run_experiment.py experiments/<name>/recipe.yaml`. Official ranking and 15-condition tables: [outputs/tables/compare_spec/README.md](outputs/tables/compare_spec/README.md).
+Frozen SID DINOv2 (ablation ~0.90) remains in release `v0.1-model` if you need that probe.
 
 ## Limitations
 
-- **Linear-probe ceiling**: the backbone is frozen; accuracy is bounded by DINOv2
-  features. Partial unfreezing and MLP heads were ablated and did not beat the probe
-  on the demo val.
-- **Scores are not calibrated**: at threshold 0.5 `sid_dinov2` is miss-heavy
-  (FP 10 / FN 88). `pred` is a score — downstream should pick the operating point by
-  their false-accusation budget (see [docs/error_analysis.md](docs/error_analysis.md)).
-- **Generator coverage**: Nova and Infinity remain hard (recall 0.45–0.74 on EvalGEN
-  across all our models). The demo val contains only DALL·E fakes.
-- **Image modality only**, English-only project scope; evaluation subsets are
-  1024²-heavy, so very small thumbnails are under-tested.
+- **0.5 is not calibrated.** Last-4 / fuse are miss-heavy at 0.5 (1 FP / 44–60 FN on 400). Use `pred` as a score; pick the FPR you can afford ([docs/error_analysis.md](docs/error_analysis.md)).
+- **Nova / Infinity** stay hard on recall at 0.5 even when AUROC is high. Official val is DALL·E-only.
+- **D4/D5 mix-ins** did not beat D3 on official DALL·E; do not submit those heads.
+- **Image-only**, English docs. Very small thumbnails are under-tested (eval is ~1024²-heavy).
+- Training last-4 **on** D3 dropped official score vs last-4 alone — complementary fuse beats stacking.
 
 ## Team & contributions
 
+<!-- 2026-08-31, tianqi, names/roles from kiki for Devpost -->
 | Member | Focus |
 |---|---|
-| chi030303 (tianqi) | Tech lead: training/eval infra, recipes, model & data ablations |
-| Jasminetothemoon (Zyun) | Official transforms & manifests, bad-case pipeline + gallery, error analysis |
-| kiki | Training runs, EvalGEN streaming eval, feature cache |
-| James | Dataset research & selection |
+| kiki (`chi030303`) | Training/eval pipeline, CLIP-B last-4 submit, D3/D4/D5 mix-ins, last4+mix fuse, EvalGEN (incl. Nova), contest write-ups |
+| yun | Model ablations (backbone, last-4 vs first-4, CLIP-L, 336, dual-branch, consistency) |
+| samily | Error / bad-case **analysis**; data-ablation design (A/D axes) |
+| zhengcongyun | Bad-case **collection** pipeline; official robustness transforms |
+| James | ComfyUI data generation (self-built t2i / i2i) |
+# end
 
-*(names/handles — please double-check before Devpost submit)*
-
-Repo must be **public** by 1 Sep 12:00 GMT+8 (Settings → General → Danger zone).
+Repo must be **public** by 1 Sep 12:00 GMT+8. Self-built images: [docs/dataset_release.md](docs/dataset_release.md) (**publish tomorrow morning, not tonight**).
 
 ## Team workflow
 
@@ -166,10 +179,3 @@ Repo must be **public** by 1 Sep 12:00 GMT+8 (Settings → General → Danger zo
 - GPU / Vast: [docs/gpu.md](docs/gpu.md)
 - Communication and freeze dates: [docs/ops.md](docs/ops.md)
 
-## Reproduce (after a real model exists)
-
-```bash
-python predict.py /path/to/image_dir ./outputs/pred.json --ckpt checkpoints/best.pt
-```
-
-Limitations and Day-3 write-up go here before Devpost submit. Repo must be **public** by 1 Sep 12:00 GMT+8.

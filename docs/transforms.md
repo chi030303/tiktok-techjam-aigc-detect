@@ -82,6 +82,8 @@ data/
 | `content_type` | str | `real` / `full_synthetic` / `partial_manipulation`。缺省时由 label 推断。**tampered 标第三种，默认不进 train** |
 | `original_format` | str\|null | 落盘后缀（`jpeg`→`jpg`）。审计 DDA 格式捷径，不是训练目标 |
 | `phash` | str\|null | 64-bit DCT perceptual hash，16 位 hex。去重、以及 SID train vs 官方 val 的 **整图拷贝** 碰撞。局部篡改通常对不上 COCO 原图，那些靠 `content_type` 排除 |
+<!-- 2026-08-31, tianqi, source_id binds i2i real/fake reconstructions of one scene -->
+| `source_id` | str\|null | 同一场景三元组共享；i2i 真图与 Gemini/Codex 重建图绑在一起。旧 JSONL 可缺省 |
 <!-- end -->
 
 **transform**（`build.py` 产出，每张派生图一行；source 字段反范式带入，评估免 join）：
