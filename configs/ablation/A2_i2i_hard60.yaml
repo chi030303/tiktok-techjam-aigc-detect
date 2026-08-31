@@ -1,0 +1,10 @@
+# 2026-08-31, tianqi, A2 i2i-hard 60 triplets; not the 8k A2 pool
+name: A2_i2i_hard60
+seed: 20260831
+notes: >
+  60 real + 60 Gemini (nano_banana) i2i + 60 Codex reconstructions.
+  Rows share source_id. Do not treat as 180 independent images. First experiment
+  is paired ranking of already-trained SID/T2I ckpts (eval_i2i_triplets.py),
+  not a from-scratch train. Optional later: small-LR finetune of last4.
+  Not mixed into D4. Official val / EvalGEN stay holdout.
+# end

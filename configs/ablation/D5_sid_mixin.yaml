@@ -1,0 +1,9 @@
+# 2026-08-31, tianqi, D5 = D3 ∪ D4; jsonl from scripts/build_d5_mixin.py
+name: D5_sid_mixin
+seed: 20260831
+notes: >
+  Final-ish SID mix: D3 (flux2, sd35, WildFake UNet 4k, ADM 1k, DDPM 1k)
+  plus D4 (full nano_banana, PixArt DiT, self-built SDXL, GPT). Hunyuan
+  excluded. Dedup by filename. Train is full SID parquet with this mix-in
+  replacing equal SID FLUX fakes. Unseen = EvalGEN Nova + official DALL·E.
+# end

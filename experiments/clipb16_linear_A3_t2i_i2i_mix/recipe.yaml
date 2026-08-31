@@ -1,0 +1,39 @@
+# 2026-08-31, tianqi, A3 mix: D2 t2i + 120 i2i fakes, same 8k reals
+name: clipb16_linear_A3_t2i_i2i_mix
+description: >
+  DATA_ABLATION_PLAN A3 at available scale. D1 8k reals + D2 t2i fakes +
+  120 i2i reconstructions. Not 4k+4k (only 60 triplets exist). Frozen CLIP-B.
+owner: kiki
+
+backbone: clip-vit-base-patch16
+head: linear
+freeze_backbone: true
+input_mode: rgb
+
+train:
+  datasets:
+    - manifest
+  manifest: data/manifests/ablation/A3_t2i_i2i_mix.jsonl
+  eval_manifest: data/manifests/source_sid_val.jsonl
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - official_val
+  - evalgen
+
+aug:
+  online: false
+
+optim:
+  epochs: 3
+  batch_size: 64
+  lr: 0.001
+  num_workers: 4
+  cache_features: true
+  seed: 20260831
+
+gpu: "1"
+# end

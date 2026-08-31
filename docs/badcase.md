@@ -52,12 +52,13 @@ python scripts/run_badcase.py --pred outputs/pred_evalgen.json \
 
 ## 画册：肉眼直接看 bad case（`scripts/badcase_gallery.py`）
 
-把 pred JSON 渲染成**自包含 HTML 画册**——FP/FN 分区、按置信度排序（最糟的
-排最前）、缩略图 base64 内嵌；单文件产物，scp 回本地浏览器打开即可，不需要
-服务器在线。
+把 pred JSON 渲染成可翻看的 HTML 画册——FP/FN 分区、按置信度排序（最糟的
+排最前）。小集合（默认每类 60、合计 ≤80 张）仍是单文件 base64；**全量**自动改成
+分页目录（`index.html` + `thumbs/*.jpg`），每页约 36 张，避免浏览器卡死。
+`--from-html giant.html` 可以把已经生成的巨型单文件拆成同一套分页目录。
 
 <!-- 2026-08-31, tianqi, current high-AUC galleries + do not open on Vast Jupyter -->
-组员看画册：把 `outputs/tables/badcase_galleries/` 和 `badcase_compare/` **下到本机**，打开 `index.html`。Vast Jupyter / 文件浏览器点不开。步骤见 [badcase-galleries.md](badcase-galleries.md)。当前入口含 fuse 400、last4、D3 mix 等。
+组员看画册：把 `outputs/tables/badcase_galleries/` 和 `badcase_compare/` **下到本机**，打开 `index.html`。Vast Jupyter / 文件浏览器点不开。步骤见 [badcase-galleries.md](badcase-galleries.md)。当前入口含 fuse 400、last4、D3 mix 等。全量 SID 打开文件夹里的 `index.html`，不要打开旧的 30MB 单文件。
 <!-- end -->
 
 ```bash
@@ -82,10 +83,13 @@ scp -P <ssh端口> <user>@<gpu服务器>:/workspace/experiments/yun_eval/galleri
 | `--condition` / `--threshold` | 条件标签 / FP-FN 判定阈值（默认 0.5） |
 | `--max-images` / `--seed` | 平衡抽样（正整数；0 或负数直接报错，两个 badcase CLI 语义一致） |
 | `--max-per-type` / `--thumb` | 每类最多画几张（默认 60）/ 缩略图最长边（默认 384） |
+| `--layout` / `--page-size` | `auto`（默认：≤80 张嵌进单 HTML，更多则分页目录）/ `folder` / `embed`；分页每页张数（默认 36） |
+| `--from-html` | 把已有的巨型 base64 HTML 拆成分页目录 |
 
-产物：单文件 HTML。FP 区（真图误判为 AI，红框，置信度最高的排最前）+ FN 区
+产物：小集合仍是单文件 HTML。全量是文件夹：`index.html`（翻页）+ `thumbs/*.jpg`。
+FP 区（真图误判为 AI，红框，置信度最高的排最前）+ FN 区
 （假图漏检，橙框，置信度最低的排最前），卡片带 pred、标签、条件、generator、
-完整路径；超出 `--max-per-type` 的只计数不渲染，计数显示在区块标题。
+完整路径；超出 `--max-per-type` 的只计数不渲染。发给组员请发整个文件夹。
 
 **缩略图缺失不会静默**：某张图打不开（物化树被清理、路径失效等）就渲染占位符，
 stdout 与 HTML meta 行都带 `thumbnails ok/shown` 计数；**全部缺失时额外打 stderr

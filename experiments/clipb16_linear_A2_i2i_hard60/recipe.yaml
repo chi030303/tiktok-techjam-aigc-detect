@@ -1,0 +1,41 @@
+# 2026-08-31, tianqi, A2 i2i-only probe on 60 triplets; diagnostic, not submit
+name: clipb16_linear_A2_i2i_hard60
+description: >
+  DATA_ABLATION_PLAN A2 probe (not 8k). Train frozen CLIP-B linear on 60 real +
+  120 i2i fakes only. Expect official val to tank. Use after paired eval says
+  current ckpts miss reconstructions. Do not submit this ckpt.
+owner: kiki
+
+backbone: clip-vit-base-patch16
+head: linear
+freeze_backbone: true
+input_mode: rgb
+
+train:
+  datasets:
+    - manifest
+  manifest: data/manifests/ablation/A2_i2i_hard60.jsonl
+  eval_manifest: data/manifests/source_sid_val.jsonl
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - official_val
+  - evalgen
+
+aug:
+  online: false
+
+optim:
+  epochs: 20
+  batch_size: 32
+  lr: 0.001
+  num_workers: 4
+  cache_features: true
+  seed: 20260831
+
+# 2026-08-31, tianqi, A2 on GPU0 so GPU1 can run A3 in parallel (ComfyUI ~11G, 49G card)
+gpu: "0"
+# end

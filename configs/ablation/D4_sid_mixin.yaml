@@ -1,0 +1,10 @@
+# 2026-08-31, tianqi, D4 mix-in note; jsonl is built by scripts/build_d4_mixin.py
+name: D4_sid_mixin
+seed: 20260831
+notes: >
+  Full SID parquet (~140k) plus this fake mix-in, replacing an equal number of
+  SID FLUX fakes. Mix is all nano_banana (~1500) + PixArt Sigma (~1500, DiT
+  stand-in) + SDXL full-refiner (~1500) + GPT Image (~1500). Hunyuan is NOT
+  included (weights/outputs not licensed for training). Unseen is EvalGEN
+  (Nova is the hard family). No EvalGEN images, no data/val, no i2i/real.
+# end

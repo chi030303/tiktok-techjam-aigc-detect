@@ -65,7 +65,8 @@ if [[ -f "$U4" && -f "$D3" ]]; then
     --stem "evalgen_r400_fuse_u4_d3"
 fi
 
-echo "==== phase2 full-n 15-cond $(date -u) ===="
+# 2026-08-31, tianqi, phase2 = Nova only x 15; Flux/GoT/Infinity/OmniGen already in r400
+echo "==== phase2 Nova-only 15-cond $(date -u) ===="
 for spec in "unfreeze4=${U4}" "D3_mix=${D3}" "d3_unfreeze4=${D3U4}"; do
   name="${spec%%=*}"
   path="${spec#*=}"
@@ -73,10 +74,12 @@ for spec in "unfreeze4=${U4}" "D3_mix=${D3}" "d3_unfreeze4=${D3U4}"; do
     echo "skip missing $name $path"
     continue
   fi
-  evalgen_grid "full_${name}" full \
+  evalgen_grid "full_nova_${name}" full \
+    --generators nova \
     --ckpt "$spec" \
-    --stem "evalgen_rfull_${name}"
+    --stem "evalgen_rfull_nova_${name}"
 done
+# end
 
 echo "==== evalgen robust done $(date -u) ===="
 # end
