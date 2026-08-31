@@ -1,5 +1,9 @@
 # Error Analysis Note（交付物 5）
 
+<!-- 2026-08-31, tianqi, DINOv2 note is last-night ablation; contest ranking is CLIP-B last4 / fuse -->
+> **Contest ranking (31 Aug):** submit CLIP-B last-4 (official formula **0.990** / full 0.989) or fuse last4+D3 (**0.993**). This note still documents frozen **SID DINOv2** (formula ~0.90) as a backbone ablation. High-AUC galleries: `outputs/tables/badcase_galleries/index.html` — download and open locally, see [badcase-galleries.md](badcase-galleries.md).
+<!-- end -->
+
 > 评测对象：`sid_dinov2`（冻结 DINOv2 ViT-L/14 + 1,025 参数线性头，SID_Set 训练）。
 > 数据：官方演示集（COCO val2017 真图 200 + DALL·E Advanced 假图 200，balanced）。
 > 阈值 0.5（占位口径，最终由风控拍板）。复现命令见文末。分析人：Zyun，2026-08-31。

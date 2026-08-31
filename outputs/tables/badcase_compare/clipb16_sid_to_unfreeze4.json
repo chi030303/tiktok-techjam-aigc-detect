@@ -1,0 +1,18 @@
+{
+  "base": "clipb16_sid",
+  "new": "unfreeze4",
+  "n_overlap": 400,
+  "n_real": 200,
+  "n_fake": 200,
+  "threshold": 0.5,
+  "ok": 324,
+  "fn_new": 36,
+  "fn_remain": 24,
+  "fn_fixed": 13,
+  "fp_remain": 1,
+  "fp_fixed": 2,
+  "fn_base": 37,
+  "fn_new_model": 60,
+  "fp_base": 3,
+  "fp_new_model": 1
+}

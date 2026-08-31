@@ -36,6 +36,75 @@ def test_full_cifake_recipes_forbids_holdouts():
     # end
 
 
+def test_online_aug_recipes_forbids_holdouts():
+    # 2026-08-29, tianqi, online-aug CIFAKE recipes still must not train on val
+    root = Path(__file__).resolve().parents[1] / "experiments"
+    for name in (
+        "resnet50_linear_cifake_aug",
+        "dinov2l_linear_cifake_aug",
+        "clipb16_linear_cifake_aug",
+        "clipl14_linear_cifake_aug",
+    ):
+        recipe = load_recipe(root / name / "recipe.yaml")
+        validate(recipe)
+        assert recipe["aug"]["online"] is True
+        assert NO_TRAIN_NAMES <= set(recipe["train"]["forbid"])
+    # end
+
+
+def test_six_op_expand_recipes_forbids_holdouts():
+    # 2026-08-29, tianqi, six-op expand recipes still must not train on val
+    root = Path(__file__).resolve().parents[1] / "experiments"
+    for name in (
+        "resnet50_linear_cifake_aug6",
+        "dinov2l_linear_cifake_aug6",
+        "clipb16_linear_cifake_aug6",
+        "clipl14_linear_cifake_aug6",
+    ):
+        recipe = load_recipe(root / name / "recipe.yaml")
+        validate(recipe)
+        assert recipe["aug"]["online"] is True
+        assert recipe["aug"]["expand"] == "six_ops"
+        assert NO_TRAIN_NAMES <= set(recipe["train"]["forbid"])
+    # end
+
+
+def test_mlp_fft_sid_recipes_forbids_holdouts():
+    # 2026-08-29, tianqi, overnight mlp/fft/SID recipes still must not train on val
+    # 2026-08-30, tianqi, CLIP mlp/fft/SID fill-in uses the same forbid + head/mode
+    root = Path(__file__).resolve().parents[1] / "experiments"
+    checks = {
+        "dinov2l_linear_cifake_mlp": ("mlp", "rgb", "cifake"),
+        "dinov2l_linear_cifake_fft": ("linear", "fft", "cifake"),
+        "resnet50_linear_sid_aug": ("linear", "rgb", "sid_set"),
+        "dinov2l_linear_sid_aug": ("linear", "rgb", "sid_set"),
+        "clipb16_linear_cifake_mlp": ("mlp", "rgb", "cifake"),
+        "clipl14_linear_cifake_mlp": ("mlp", "rgb", "cifake"),
+        "clipb16_linear_cifake_fft": ("linear", "fft", "cifake"),
+        "clipl14_linear_cifake_fft": ("linear", "fft", "cifake"),
+        "clipb16_linear_sid_aug": ("linear", "rgb", "sid_set"),
+        "clipl14_linear_sid_aug": ("linear", "rgb", "sid_set"),
+        "dinov2l_linear_sid": ("linear", "rgb", "sid_set"),
+        "dinov2l_linear_sid_mlp": ("mlp", "rgb", "sid_set"),
+        "dinov2l_linear_sid_mlp_aug": ("mlp", "rgb", "sid_set"),
+        "dinov2l_linear_sid_fft": ("linear", "fft", "sid_set"),
+        "dinov2l_linear_sid_fft_aug": ("linear", "fft", "sid_set"),
+    }
+    # end
+    for name, (head, mode, src) in checks.items():
+        recipe = load_recipe(root / name / "recipe.yaml")
+        validate(recipe)
+        assert recipe["head"] == head
+        assert recipe.get("input_mode", "rgb") == mode
+        assert src in recipe["train"]["datasets"]
+        assert NO_TRAIN_NAMES <= set(recipe["train"]["forbid"])
+        if name.endswith("_aug"):
+            assert recipe["aug"]["online"] is True
+        if name in ("dinov2l_linear_sid", "dinov2l_linear_sid_mlp", "dinov2l_linear_sid_fft"):
+            assert recipe["aug"]["online"] is False
+    # end
+
+
 def test_train_on_val_is_rejected():
     recipe = yaml.safe_load(
         """
@@ -51,6 +120,23 @@ train:
     except SystemExit:
         return
     raise AssertionError("expected SystemExit")
+
+
+def test_ablation_manifest_recipes_forbids_holdouts():
+    # 2026-08-30, tianqi, D1/C-Flow/C-Pixel train from JSONL, never val/evalgen
+    root = Path(__file__).resolve().parents[1] / "experiments"
+    for name in (
+        "clipb16_linear_D1_sid_only",
+        "clipb16_linear_C_flow_sid",
+        "clipb16_linear_C_pixel",
+    ):
+        recipe = load_recipe(root / name / "recipe.yaml")
+        validate(recipe)
+        assert recipe["train"]["datasets"] == ["manifest"]
+        assert recipe["train"]["manifest"].endswith(".jsonl")
+        assert recipe["aug"]["online"] is False
+        assert NO_TRAIN_NAMES <= set(recipe["train"]["forbid"])
+    # end
 
 
 def test_featcache_path_is_shared():

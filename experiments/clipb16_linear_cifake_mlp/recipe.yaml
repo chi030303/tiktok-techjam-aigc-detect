@@ -1,0 +1,34 @@
+# 2026-08-30, tianqi, MLP head on frozen CLIP-B/16 CIFAKE feats (feat cache, no online aug)
+name: clipb16_linear_cifake_mlp
+description: Frozen CLIP ViT-B/16 + 256-d MLP head on clean CIFAKE.
+owner: kiki
+
+backbone: clip-vit-base-patch16
+head: mlp
+freeze_backbone: true
+input_mode: rgb
+
+train:
+  datasets:
+    - cifake
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - cifake_test
+
+aug:
+  online: false
+
+optim:
+  epochs: 5
+  batch_size: 64
+  head_batch_size: 8192
+  cache_features: true
+  lr: 0.001
+  num_workers: 8
+
+gpu: "1"
+# end

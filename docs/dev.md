@@ -8,6 +8,7 @@
 |---|---|
 | 本页 | SSH、tmux、venv、显卡、目录 |
 | [SOP-git.md](SOP-git.md) | 分支、PR、谁合 `main` |
+| [badcase-galleries.md](badcase-galleries.md) | 误差画册：本机打开，不要在 Vast 上点 HTML |
 | [data.md](data.md) | 数据路径、禁止训练 |
 | [gpu.md](gpu.md) | Vast 这台机 |
 | [experiments/README.md](../experiments/README.md) | 一个实验一个 recipe |

@@ -1,0 +1,46 @@
+# 2026-08-31, tianqi, D3 mix-in + CLIP-B unfreeze4 (data win × best model knob)
+name: clipb16_linear_d3_unfreeze4
+description: D3 SID-full mix (replace 9622 FLUX) + last-4 CLIP-B unfreeze + online aug.
+owner: kiki
+
+backbone: clip-vit-base-patch16
+head: linear
+freeze_backbone: false
+input_mode: rgb
+
+partial_unfreeze:
+  n_layers: 4
+  backbone_lr: 0.00001
+  head_lr: 0.001
+
+train:
+  datasets:
+    - sid_set
+  mixin_manifest: data/manifests/ablation/D3_sid_mixin.jsonl
+  replace_sid_fakes: true
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - official_val
+  - evalgen
+
+aug:
+  online: true
+  jpeg: true
+  blur: true
+  resize: true
+  noise: true
+  jitter: true
+  center_crop: true
+
+optim:
+  epochs: 3
+  batch_size: 64
+  num_workers: 4
+  seed: 20260831
+
+gpu: "1"
+# end

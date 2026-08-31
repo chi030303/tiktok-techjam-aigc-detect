@@ -1,10 +1,5 @@
-# 2026-08-30, yun, exp1 training loop: partial-unfreeze needs a fresh forward every eval too
-"""Train a PartialUnfreezeClipProbe on SID_Set with online official-transform aug.
-
-Cannot reuse src.train.loop's cached-eval-features trick: the backbone changes
-every step here, so eval must re-run the full (current) model each epoch, not
-score a linear head against features frozen at epoch 0.
-"""
+# 2026-08-31, tianqi, port yun partial-unfreeze loop; CLIP-L / res336 combo
+"""Train PartialUnfreezeClipProbe on SID with online aug. No feat cache: backbone moves."""
 
 from __future__ import annotations
 
@@ -14,14 +9,32 @@ import time
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from torchvision import transforms
 
 from src.data.sid import SidHfDataset
 from src.models.partial_unfreeze_probe import PartialUnfreezeClipProbe
 from src.paths import artifact_dir, models_root
 from src.recipe import validate
-from src.train.sid_online import _aug_expand, _image_size, _input_mode, _interpolate_pos, _tfm
+from src.train.loop import _aug_expand, _input_mode
 
 # end
+
+IMAGENET_MEAN = (0.485, 0.456, 0.406)
+IMAGENET_STD = (0.229, 0.224, 0.225)
+
+
+def _image_size(recipe: dict) -> int:
+    return int(recipe.get("image_size") or 224)
+
+
+def _tfm(size: int):
+    return transforms.Compose(
+        [
+            transforms.Resize((size, size)),
+            transforms.ToTensor(),
+            transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
+        ]
+    )
 
 
 @torch.no_grad()
@@ -54,6 +67,7 @@ def run_train_partial_unfreeze(recipe: dict) -> dict:
 
     pu = recipe.get("partial_unfreeze") or {}
     n_unfreeze = int(pu.get("n_layers", 2))
+    unfreeze_from = str(pu.get("unfreeze_from") or "last")
     backbone_lr = float(pu.get("backbone_lr", 1e-5))
     head_lr = float(pu.get("head_lr", 1e-3))
 
@@ -61,7 +75,7 @@ def run_train_partial_unfreeze(recipe: dict) -> dict:
     head_kind = str(recipe.get("head") or "linear")
     input_mode = _input_mode(recipe)
     image_size = _image_size(recipe)
-    interp = _interpolate_pos(recipe)
+    interp = image_size != 224
     expand = _aug_expand(recipe)
 
     optim = recipe.get("optim") or {}
@@ -75,8 +89,8 @@ def run_train_partial_unfreeze(recipe: dict) -> dict:
     max_eval = smoke.get("max_eval")
 
     print(
-        f"partial-unfreeze  n_layers={n_unfreeze}  backbone_lr={backbone_lr}  head_lr={head_lr}  "
-        f"batch={batch}  epochs={epochs}  image_size={image_size}",
+        f"partial-unfreeze  n_layers={n_unfreeze}  from={unfreeze_from}  backbone_lr={backbone_lr}  head_lr={head_lr}  "
+        f"batch={batch}  epochs={epochs}  image_size={image_size}  backbone={backbone_name}",
         flush=True,
     )
 
@@ -88,8 +102,24 @@ def run_train_partial_unfreeze(recipe: dict) -> dict:
 
     bb = models_root() / backbone_name
     model = PartialUnfreezeClipProbe(
-        bb, n_unfreeze=n_unfreeze, head_kind=head_kind, interpolate_pos_encoding=interp
+        bb,
+        n_unfreeze=n_unfreeze,
+        head_kind=head_kind,
+        interpolate_pos_encoding=interp,
+        unfreeze_from=unfreeze_from,
     ).to(device)
+
+    # 2026-08-31, tianqi, D3 mixin: same replace-FLUX path as frozen SID mix
+    extra_rows = None
+    train_cfg = recipe.get("train") or {}
+    mixin = train_cfg.get("mixin_manifest")
+    if mixin:
+        from src.data.manifest_ds import load_mixin_rows
+
+        extra_rows = load_mixin_rows(mixin)
+        print(f"  mixin_manifest={mixin} n_extra={len(extra_rows)}", flush=True)
+    replace_sid = bool(train_cfg.get("replace_sid_fakes", True))
+    # end
 
     train_ds = SidHfDataset(
         "train",
@@ -99,6 +129,8 @@ def run_train_partial_unfreeze(recipe: dict) -> dict:
         seed=seed,
         max_images=max_train,
         input_mode=input_mode,
+        extra_rows=extra_rows,
+        replace_sid_fakes=replace_sid if extra_rows else False,
     )
     eval_ds = SidHfDataset(
         "validation",
@@ -110,20 +142,19 @@ def run_train_partial_unfreeze(recipe: dict) -> dict:
     )
     print(f"  sid n_train={len(train_ds)} n_eval={len(eval_ds)}", flush=True)
 
-    train_loader = DataLoader(
-        train_ds,
-        batch_size=batch,
-        shuffle=True,
-        num_workers=workers,
+    loader_kw = dict(
+        num_workers=min(workers, 4),
         pin_memory=True,
         persistent_workers=workers > 0,
-        prefetch_factor=4 if workers > 0 else None,
     )
+    if workers > 0:
+        loader_kw["prefetch_factor"] = 4
+    train_loader = DataLoader(train_ds, batch_size=batch, shuffle=True, **loader_kw)
     eval_loader = DataLoader(
         eval_ds,
         batch_size=batch,
         shuffle=False,
-        num_workers=workers,
+        num_workers=min(workers, 4),
         pin_memory=True,
     )
 
@@ -134,6 +165,7 @@ def run_train_partial_unfreeze(recipe: dict) -> dict:
         ]
     )
     loss_fn = nn.BCEWithLogitsLoss()
+    amp = device.type == "cuda"
     n_batches = max(1, len(train_loader))
 
     def ckpt_payload() -> dict:
@@ -142,6 +174,7 @@ def run_train_partial_unfreeze(recipe: dict) -> dict:
             "head": model.head.state_dict(),
             "backbone_state_dict": model.backbone.state_dict(),
             "n_unfreeze": n_unfreeze,
+            "unfreeze_from": unfreeze_from,
             "backbone": backbone_name,
             "recipe": name,
             "head_kind": head_kind,
@@ -161,8 +194,9 @@ def run_train_partial_unfreeze(recipe: dict) -> dict:
             x = x.to(device, non_blocking=True)
             y = y.float().to(device)
             opt.zero_grad(set_to_none=True)
-            logit = model(x)
-            loss = loss_fn(logit, y)
+            with torch.amp.autocast("cuda", enabled=amp):
+                logit = model(x)
+                loss = loss_fn(logit, y)
             loss.backward()
             opt.step()
             running += float(loss.item()) * y.size(0)
@@ -189,6 +223,7 @@ def run_train_partial_unfreeze(recipe: dict) -> dict:
         "experiment": name,
         "backbone": backbone_name,
         "n_unfreeze": n_unfreeze,
+        "unfreeze_from": unfreeze_from,
         "backbone_lr": backbone_lr,
         "head_lr": head_lr,
         "image_size": image_size,

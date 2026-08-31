@@ -11,8 +11,16 @@ from src.paths import feat_cache_path
 # end
 
 
-def cache_path(backbone: str, split: str, n: int, seed: int, size: int = 224) -> Path:
-    return feat_cache_path(backbone, split, n, seed, size)
+def cache_path(
+    backbone: str,
+    split: str,
+    n: int,
+    seed: int,
+    size: int = 224,
+    source: str = "cifake",
+    input_mode: str = "rgb",
+) -> Path:
+    return feat_cache_path(backbone, split, n, seed, size, source=source, input_mode=input_mode)
 
 
 def load_cached(path: Path) -> tuple[torch.Tensor, torch.Tensor] | None:
@@ -36,9 +44,12 @@ def extract_features(
     workers: int,
     device: torch.device,
     tag: str,
+    input_mode: str = "rgb",
+    dataset=None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     from src.data.cifake import ImagePathDataset
 
+    ds = dataset if dataset is not None else ImagePathDataset(rows, transform, input_mode=input_mode)
     loader_kw: dict = dict(
         batch_size=batch,
         shuffle=False,
@@ -48,7 +59,7 @@ def extract_features(
     )
     if workers > 0:
         loader_kw["prefetch_factor"] = 4
-    loader = DataLoader(ImagePathDataset(rows, transform), **loader_kw)
+    loader = DataLoader(ds, **loader_kw)
     amp = device.type == "cuda"
     feats: list[torch.Tensor] = []
     labels: list[torch.Tensor] = []

@@ -4,6 +4,10 @@
 
 本文档是这条线的主表 + 每格结论，对应数据线文档里 Master Ablation Table 的角色。
 
+<!-- 2026-08-31, tianqi, overnight official-val numbers after yun SID-val table -->
+SID-val Acc 已饱和，**不要用 SID-val 选提交**。官方 val 400 公式：CLIP-B last4 **0.990**，SID dualbranch 0.966（掉），D3 dualbranch **0.983**（小赢冻结 D3 0.978，仍输 last4 / fuse 0.993）。见 [compare_spec/README.md](../outputs/tables/compare_spec/README.md)。
+<!-- end -->
+
 ## 一、任务范围
 
 - **任务1**：CLIP ViT-B/16、CLIP ViT-L/14 在 CIFAKE 全量数据（10万train/2万test）上训练线性探测头（linear probe），backbone 冻结。

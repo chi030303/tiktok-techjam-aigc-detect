@@ -1,7 +1,7 @@
 # 2026-08-29, zyun, tests for training-time random augmentation
 import numpy as np
 
-from src.transforms.augment import random_augment, sample_random_setting
+from src.transforms.augment import apply_one_op, random_augment, sample_random_setting
 from tests.test_transforms import make_image
 
 ALL_OPS = {"jpeg", "blur", "resize", "noise", "jitter", "crop"}
@@ -83,4 +83,16 @@ def test_chain_jpeg_reencode():
         else:
             assert info["chain_jpeg"] is None
     assert chained > 0
+
+
+def test_apply_one_op_forces_each_official_op():
+    # 2026-08-29, tianqi, expand-six training needs a forced-op API
+    img = make_image(32, 32)
+    rng = np.random.default_rng(1)
+    for op in ALL_OPS:
+        out, info = apply_one_op(img, rng, op=op)
+        assert info["op"] == op
+        assert info["clean"] is False
+        assert out.size[0] > 0
+    # end
 # end

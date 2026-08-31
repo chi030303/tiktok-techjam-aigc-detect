@@ -1,0 +1,11 @@
+{
+  "d3_dualbranch": {
+    "auc_clean": 0.9951405349198886,
+    "auc_robust": null,
+    "n_robust": 0,
+    "n_robust_expected": 14,
+    "complete": false,
+    "formula": 0.9951405349198886,
+    "model": "d3_dualbranch"
+  }
+}

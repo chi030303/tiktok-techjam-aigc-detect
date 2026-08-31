@@ -57,18 +57,76 @@ def load_cifake_rows(split: str, max_images: int | None, seed: int) -> list[tupl
 
 
 class ImagePathDataset(Dataset):
-    def __init__(self, rows: list[tuple[Path, int]], transform):
+    def __init__(
+        self,
+        rows: list[tuple[Path, int]],
+        transform,
+        augment: bool = False,
+        expand_ops: bool = False,
+        seed: int = 0,
+        input_mode: str = "rgb",
+    ):
         self.rows = rows
         self.transform = transform
+        self.augment = augment
+        self.expand_ops = expand_ops
+        self.seed = seed
+        self.input_mode = input_mode or "rgb"
+        self.epoch = 0
+        # 2026-08-29, tianqi, six-op expand: clean + one view per official op
+        if expand_ops:
+            from src.transforms.augment import OFFICIAL_OPS
+
+            self.views = (None,) + tuple(OFFICIAL_OPS)
+        else:
+            self.views = None
+        # end
+
+    def set_epoch(self, epoch: int) -> None:
+        self.epoch = int(epoch)
 
     def __len__(self) -> int:
+        if self.expand_ops:
+            return len(self.rows) * len(self.views)
         return len(self.rows)
 
     def __getitem__(self, idx: int):
-        path, y = self.rows[idx]
         # 2026-08-29, tianqi, close the file handle; 1M-scale workers leak FDs otherwise
+        if self.expand_ops:
+            n_views = len(self.views)
+            row_i = idx // n_views
+            view = self.views[idx % n_views]
+            path, y = self.rows[row_i]
+        else:
+            path, y = self.rows[idx]
+            view = None
         with Image.open(path) as im:
             img = im.convert("RGB")
+        if self.expand_ops:
+            import numpy as np
+            import torch
+
+            from src.transforms.augment import apply_one_op
+
+            if view is not None:
+                worker = torch.utils.data.get_worker_info()
+                wid = 0 if worker is None else worker.id
+                rng = np.random.default_rng((self.seed, self.epoch, idx, wid))
+                img, _info = apply_one_op(img, rng, op=view, continuous=False, chain_jpeg_p=0.0)
+        elif self.augment:
+            import numpy as np
+            import torch
+
+            from src.transforms.augment import random_augment
+
+            worker = torch.utils.data.get_worker_info()
+            wid = 0 if worker is None else worker.id
+            rng = np.random.default_rng((self.seed, self.epoch, idx, wid))
+            img, _info = random_augment(img, rng, p_clean=0.2, continuous=True, chain_jpeg_p=0.3)
+        if self.input_mode and self.input_mode not in ("rgb", "clean"):
+            from src.data.freq import apply_input_mode
+
+            img = apply_input_mode(img, self.input_mode)
         x = self.transform(img)
         return x, y, str(path)
         # end

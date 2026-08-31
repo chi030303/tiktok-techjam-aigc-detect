@@ -1,9 +1,5 @@
-# 2026-08-30, yun, exp3: frozen CLIP-B RGB branch + a small trainable CNN on the highpass residual
-"""RGB + frequency dual-branch probe (adds a path, does not replace RGB).
-
-CLIP branch is frozen (no_grad, same as FrozenLinearProbe); the shallow conv
-net on the highpass residual and the final head are the only trainable parts.
-"""
+# 2026-08-30, tianqi, load yun exp3 dual-branch CLIP probe for official_val eval
+"""Frozen CLIP-B RGB branch + shallow CNN on highpass residual."""
 
 from __future__ import annotations
 
@@ -13,13 +9,12 @@ import torch
 import torch.nn as nn
 from transformers import CLIPVisionModel
 
-from src.models.sid_linear_probe import build_head
+from src.models.linear_probe import build_head
 
 # end
 
 
 def build_freq_cnn(out_dim: int = 128) -> nn.Module:
-    # 2026-08-30, yun, ~100k params: "few million" budget from the spec, well under it
     return nn.Sequential(
         nn.Conv2d(3, 32, 3, stride=2, padding=1),
         nn.ReLU(inplace=True),

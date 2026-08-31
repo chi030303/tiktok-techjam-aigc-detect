@@ -1,0 +1,16 @@
+{
+  "base": "unfreeze4",
+  "new": "fuse_u4_d3",
+  "n_overlap": 400,
+  "n_real": 200,
+  "n_fake": 200,
+  "threshold": 0.5,
+  "ok": 339,
+  "fn_remain": 44,
+  "fn_fixed": 16,
+  "fp_remain": 1,
+  "fn_base": 60,
+  "fn_new_model": 44,
+  "fp_base": 1,
+  "fp_new_model": 1
+}

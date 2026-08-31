@@ -1,0 +1,8 @@
+# 2026-08-31, tianqi, D2 note: fakes are scanned by scripts/build_d2_selfbuilt.py
+name: D2_selfbuilt
+seed: 20260831
+notes: >
+  Not a YAML-sampled pool. Same 8k SID reals as D1_sid_only, plus all
+  self-built t2i under /workspace/data_new/output (flux2/sd35/nano_banana/GPT/old).
+  Fake n is ~6k, not padded with WildFake. No val/EvalGEN.
+# end

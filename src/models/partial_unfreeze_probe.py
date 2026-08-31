@@ -1,22 +1,14 @@
-# 2026-08-30, yun, exp1: unfreeze the last N CLIP vision-tower blocks + differential LR
-"""CLIP-B/16 vision tower with only its last N encoder blocks (+ final LN) trainable.
-
-Everything before that stays frozen and in eval() (no dropout/LN-stat drift).
-No torch.no_grad() around the backbone call: PyTorch's autograd already skips
-building a graph through the frozen prefix (no leaf there requires grad), so
-gradients only flow through the unfrozen suffix -- this is the "no feat-cache"
-path the spec calls for, but it costs no extra compute on the frozen part.
-"""
+# 2026-08-30, tianqi, load yun exp1 partial-unfreeze CLIP probe for official_val eval
+"""CLIP-B vision tower with last N encoder blocks trainable (eval still uses the saved weights)."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-import torch
 import torch.nn as nn
 from transformers import CLIPVisionModel
 
-from src.models.sid_linear_probe import build_head
+from src.models.linear_probe import build_head
 
 # end
 
@@ -28,6 +20,7 @@ class PartialUnfreezeClipProbe(nn.Module):
         n_unfreeze: int = 2,
         head_kind: str = "linear",
         interpolate_pos_encoding: bool = False,
+        unfreeze_from: str = "last",
     ):
         super().__init__()
         self.backbone = CLIPVisionModel.from_pretrained(backbone_dir, local_files_only=True)
@@ -35,32 +28,43 @@ class PartialUnfreezeClipProbe(nn.Module):
         layers = self.backbone.encoder.layers
         if not (0 < n_unfreeze < len(layers)):
             raise SystemExit(f"n_unfreeze must be in (0, {len(layers)}), got {n_unfreeze}")
+        side = (unfreeze_from or "last").lower()
+        if side not in ("last", "first"):
+            raise SystemExit(f"unfreeze_from must be last|first, got {unfreeze_from!r}")
         for p in self.backbone.parameters():
             p.requires_grad = False
-        self._unfrozen = list(layers[-n_unfreeze:]) + [self.backbone.post_layernorm]
+        # 2026-08-31, tianqi, first-N = encoder blocks 0..N-1 (no post-LN); last-N keeps post-LN
+        if side == "first":
+            self._unfrozen = list(layers[:n_unfreeze])
+        else:
+            self._unfrozen = list(layers[-n_unfreeze:]) + [self.backbone.post_layernorm]
+        # end
         for m in self._unfrozen:
             for p in m.parameters():
                 p.requires_grad = True
         self.n_unfreeze = n_unfreeze
+        self.unfreeze_from = side
         self.backbone.eval()
         hidden = self.backbone.config.hidden_size
         self.head = build_head(hidden, head_kind)
 
     def train(self, mode: bool = True):
         super().train(mode)
-        # 2026-08-30, yun, frozen prefix (embeddings + early blocks) always stays eval()
         self.backbone.eval()
         if mode:
             for m in self._unfrozen:
                 m.train()
         return self
 
+    def forward(self, pixel_values):
+        out = self.backbone(
+            pixel_values=pixel_values, interpolate_pos_encoding=self._interpolate_pos
+        )
+        return self.head(out.pooler_output).squeeze(-1)
+
     def backbone_trainable_parameters(self):
+        # 2026-08-31, tianqi, Adam group for unfrozen CLIP blocks + final LN
         for m in self._unfrozen:
             yield from m.parameters()
-
-    def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
-        out = self.backbone(pixel_values=pixel_values, interpolate_pos_encoding=self._interpolate_pos)
-        feat = out.pooler_output
-        return self.head(feat).squeeze(-1)
+        # end
 # end

@@ -92,47 +92,44 @@ Tables land in `outputs/tables/` (csv / md / json). Full transform list and hold
 
 ## Results
 
-**Submission model: `sid_dinov2`** — frozen DINOv2 ViT-L/14 backbone (~0.3B params, well under the 2B limit) + a 1,025-param linear head trained on SID_Set. Checkpoint: [release `v0.1-model`](https://github.com/chi030303/tiktok-techjam-aigc-detect/releases/tag/v0.1-model) (5.95 KB).
+<!-- 2026-08-31, tianqi, contest ranking uses official 0.50×AUC_clean+0.50×AUC_robust; last-night README had SID DINOv2 as submit -->
+**Submit (single ckpt): CLIP-B/16 last-4 unfreeze** — SID 14万 + official online aug. Official val 400 formula **0.990** (full 13843 **0.989**). If two checkpoints are allowed: **mean-logit fuse** of last4 + D3 mix = **0.993**.
 
-Robustness on the official demo val (COCO val2017 + DALL·E Advanced, n=400 balanced, AUROC):
+Score is **0.50×AUC_clean + 0.50×AUC_robust** (14 transform keys). Acc@0.5 is not the score.
 
-| clean | jpeg q90 | q70 | q50 | q30 | blur σ0.5 | σ1.0 | σ2.0 | resize 0.5× | 0.25× | noise σ0.02 | σ0.05 | σ0.10 | jitter | crop 80% |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 0.904 | 0.911 | 0.881 | 0.872 | 0.889 | 0.905 | 0.905 | 0.905 | 0.902 | 0.872 | 0.911 | 0.899 | 0.887 | 0.905 | 0.902 |
+| model | formula 400 | DALL·E AUC | Acc@0.5 | EvalGEN AUROC |
+|---|---:|---:|---:|---:|
+| fuse last4+D3 | **0.993** | 0.995 | 0.888 | **0.997** |
+| CLIP-B unfreeze4 | **0.990** | 0.991 | 0.848 | 0.989 |
+| D3 dualbranch | 0.983 | 0.988 | 0.948 | 0.995 |
+| D3 mix (frozen CLIP-B) | 0.978 | 0.985 | 0.940 | 0.995 |
+| CLIP-L SID-aug | 0.976 | 0.976 | 0.885 | 0.995 |
+| CLIP-B SID-aug | 0.970 | 0.969 | 0.900 | 0.992 |
+| SID DINOv2 frozen | 0.900 | 0.904 | — | 0.964 |
 
-Robust macro-average over the 14 transformed conditions: **0.897** (min 0.872). On the
-held-out **EvalGEN** benchmark (55,298 fakes from 5 unseen generator families + 10K real
-pool): **AUROC 0.964**, recall 0.888 — best-in-team on the hardest family (Nova, recall
-0.777). Full error analysis and per-generator breakdown:
-[docs/error_analysis.md](docs/error_analysis.md).
+SID dualbranch was 0.966 (drop). D3 dualbranch **0.983** beats frozen D3, still loses to last4/fuse. Full 15-condition tables: [outputs/tables/compare_spec/README.md](outputs/tables/compare_spec/README.md). Error galleries: [docs/badcase-galleries.md](docs/badcase-galleries.md). The DINOv2 write-up in [docs/error_analysis.md](docs/error_analysis.md) is a frozen-head ablation, not the contest submit.
+<!-- end -->
 
 ## Reproduce
 
-End-to-end, verified on a fresh `MODELS_ROOT` (no pre-existing weights):
+Contest submit is **CLIP-B last-4**, recipe `experiments/clipb16_linear_sid_unfreeze4/`. Checkpoint is **not** the v0.1 DINOv2 head.
 
 ```bash
-# 1. environment
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+python scripts/download_backbones.py --only clip-vit-base-patch16
+python predict.py <image_dir> out.json --ckpt /workspace/experiments/clipb16_linear_sid_unfreeze4/ckpts/best.pt
+```
 
-# 2. backbone (~1.2 GB DINOv2-L; or --only the one you need)
+Frozen SID DINOv2 (ablation, formula ~0.90) is still in release `v0.1-model` if you need that write-up:
+
+```bash
 python scripts/download_backbones.py --only dinov2-vit-large-patch14
-
-# 3. checkpoint (5.95 KB linear head)
 gh release download v0.1-model -R chi030303/tiktok-techjam-aigc-detect -p sid_dinov2_best.pt -O checkpoints/sid_dinov2_best.pt
-
-# 4. inference: directory in, JSON out
 python predict.py <image_dir> out.json --ckpt checkpoints/sid_dinov2_best.pt
 ```
 
-Sanity check from our run (2 COCO reals, 2 DALL·E fakes): reals scored 0.12 / 0.12,
-fakes 0.79 / 0.92. The checkpoint stores only `{head, backbone-name}` — the backbone is
-resolved from `models/`, so keep step 2 and step 3 together.
-
-Retraining from scratch: recipes live under `experiments/<name>/recipe.yaml`
-(e.g. `dinov2l_linear_sid`), run with
-`python scripts/run_experiment.py experiments/<name>/recipe.yaml`; ablation
-results and the model-selection matrix are in [docs/error_analysis.md](docs/error_analysis.md).
+Retraining: `python scripts/run_experiment.py experiments/<name>/recipe.yaml`. Official ranking and 15-condition tables: [outputs/tables/compare_spec/README.md](outputs/tables/compare_spec/README.md).
 
 ## Limitations
 

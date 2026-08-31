@@ -1,0 +1,18 @@
+{
+  "base": "clipb16_sid",
+  "new": "fuse_u4_d3",
+  "n_overlap": 400,
+  "n_real": 200,
+  "n_fake": 200,
+  "threshold": 0.5,
+  "ok": 339,
+  "fn_new": 21,
+  "fn_remain": 23,
+  "fn_fixed": 14,
+  "fp_remain": 1,
+  "fp_fixed": 2,
+  "fn_base": 37,
+  "fn_new_model": 44,
+  "fp_base": 3,
+  "fp_new_model": 1
+}

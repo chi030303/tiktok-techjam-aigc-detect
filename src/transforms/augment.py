@@ -88,6 +88,40 @@ def sample_random_setting(
     return Setting(key=f"train_{op}", op=op, params=params)
 
 
+# 2026-08-29, tianqi, decode jpeg bytes the same way random_augment does
+def _result_to_image(result) -> Image.Image:
+    if isinstance(result, bytes):
+        out = Image.open(io.BytesIO(result))
+        out.load()
+        return out
+    return result
+    # end
+
+
+def apply_one_op(
+    img: Image.Image,
+    rng: np.random.Generator,
+    op: str,
+    continuous: bool = False,
+    chain_jpeg_p: float = 0.0,
+):
+    # 2026-08-29, tianqi, force one official op so expand-six training covers all 6 views
+    setting = sample_random_setting(rng, op=op, continuous=continuous)
+    result, actual = apply_setting(img, setting, rng)
+    out = _result_to_image(result)
+    chain = None
+    if chain_jpeg_p > 0 and setting.op != "jpeg" and float(rng.random()) < chain_jpeg_p:
+        if continuous:
+            quality = int(round(float(rng.uniform(30, 90))))
+        else:
+            quality = DISCRETE_PARAMS["jpeg"]["quality"][int(rng.integers(4))]
+        out = Image.open(io.BytesIO(jpeg_compress_bytes(out, quality)))
+        out.load()
+        chain = quality
+    return out, {"clean": False, "op": setting.op, "params": actual, "chain_jpeg": chain}
+    # end
+
+
 def random_augment(
     img: Image.Image,
     rng: np.random.Generator,
@@ -106,11 +140,7 @@ def random_augment(
         return img, {"clean": True, "op": None, "params": {}, "chain_jpeg": None}
     setting = sample_random_setting(rng, continuous=continuous, op_weights=op_weights)
     result, actual = apply_setting(img, setting, rng)
-    if isinstance(result, bytes):  # jpeg op returns exact encoded bytes
-        out = Image.open(io.BytesIO(result))
-        out.load()
-    else:
-        out = result
+    out = _result_to_image(result)
     chain = None
     if chain_jpeg_p > 0 and setting.op != "jpeg" and float(rng.random()) < chain_jpeg_p:
         if continuous:

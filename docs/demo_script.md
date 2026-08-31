@@ -3,6 +3,10 @@
 > 上传 YouTube 公开，链接贴进 Devpost。录屏工具：OBS（录 1080p）。
 > 建议先在本机跑通所有命令再录；终端字体调大（≥16pt）。
 > 分镜负责人：Demo/视频角色；台词可直接照念。
+>
+> <!-- 2026-08-31, tianqi, no Streamlit; slides + local HTML gallery -->
+> **不要做 Streamlit。** 3 分钟视频用 slides + 必要时本机打开 `outputs/tables/badcase_galleries/index.html`。数字以 README Results 为准（CLIP-B last4 0.990 / fuse 0.993），不要念 DINOv2 0.90 当提交分。
+> <!-- end -->
 
 ## 分镜 0（0:00–0:20）问题与方案
 

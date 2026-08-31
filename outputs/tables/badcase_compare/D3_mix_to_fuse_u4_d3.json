@@ -1,0 +1,18 @@
+{
+  "base": "D3_mix",
+  "new": "fuse_u4_d3",
+  "n_overlap": 400,
+  "n_real": 200,
+  "n_fake": 200,
+  "threshold": 0.5,
+  "ok": 346,
+  "fn_new": 29,
+  "fn_remain": 15,
+  "fn_fixed": 5,
+  "fp_new": 1,
+  "fp_fixed": 4,
+  "fn_base": 20,
+  "fn_new_model": 44,
+  "fp_base": 4,
+  "fp_new_model": 1
+}

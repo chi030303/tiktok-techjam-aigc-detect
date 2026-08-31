@@ -55,6 +55,8 @@ class SidHfDataset(Dataset):
         seed: int = 0,
         max_images: int | None = None,
         input_mode: str = "rgb",
+        extra_rows: list[tuple[Path, int]] | None = None,
+        replace_sid_fakes: bool = True,
     ):
         hf_split = "train" if split in ("train", "train_set") else "validation"
         self.ds = load_sid_hf(hf_split)
@@ -75,14 +77,35 @@ class SidHfDataset(Dataset):
             self.views = (None,) + tuple(OFFICIAL_OPS)
         else:
             self.views = None
+        # 2026-08-31, tianqi, D3: mix disk fakes into full SID; drop equal SID FLUX
+        self.extra_rows: list[tuple[Path, int]] = list(extra_rows or [])
+        self.n_sid_fakes_dropped = 0
+        if self.extra_rows and replace_sid_fakes:
+            n_drop = sum(1 for _p, y in self.extra_rows if int(y) == 1)
+            fake_idx = [i for i in self.keep if labels[i] == 1]
+            real_idx = [i for i in self.keep if labels[i] == 0]
+            rng = random.Random(int(seed) ^ 0xD30831)
+            rng.shuffle(fake_idx)
+            n_drop = min(n_drop, len(fake_idx))
+            fake_keep = fake_idx[n_drop:]
+            self.keep = real_idx + fake_keep
+            rng.shuffle(self.keep)
+            self.n_sid_fakes_dropped = n_drop
+            print(
+                f"  sid-mix replace  drop_sid_fakes={n_drop} extra={len(self.extra_rows)} "
+                f"sid_keep={len(self.keep)}",
+                flush=True,
+            )
+        # end
 
     def set_epoch(self, epoch: int) -> None:
         self.epoch = int(epoch)
 
     def __len__(self) -> int:
+        n = len(self.keep) + len(self.extra_rows)
         if self.expand_ops:
-            return len(self.keep) * len(self.views)
-        return len(self.keep)
+            return n * len(self.views)
+        return n
 
     def __getitem__(self, idx: int):
         if self.expand_ops:
@@ -92,15 +115,24 @@ class SidHfDataset(Dataset):
         else:
             row_i = idx
             view = None
-        src_i = int(self.keep[row_i])
-        ex = self.ds[src_i]
-        img = ex["image"]
-        if not isinstance(img, Image.Image):
-            img = Image.open(img).convert("RGB")
+        n_sid = len(self.keep)
+        # 2026-08-31, tianqi, extra mixin rows are disk paths after SID parquet keep
+        if row_i >= n_sid:
+            path, y = self.extra_rows[row_i - n_sid]
+            with Image.open(path) as im:
+                img = im.convert("RGB")
+            tag = str(path)
         else:
-            img = img.convert("RGB")
-        y = int(ex["label"])
-        tag = str(ex.get("img_id") or src_i)
+            src_i = int(self.keep[row_i])
+            ex = self.ds[src_i]
+            img = ex["image"]
+            if not isinstance(img, Image.Image):
+                img = Image.open(img).convert("RGB")
+            else:
+                img = img.convert("RGB")
+            y = int(ex["label"])
+            tag = str(ex.get("img_id") or src_i)
+        # end
         if self.expand_ops:
             import numpy as np
             import torch

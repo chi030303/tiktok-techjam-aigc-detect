@@ -23,8 +23,24 @@ def _pool_features(model_type: str, outputs) -> torch.Tensor:
     # end
 
 
+# 2026-08-29, tianqi, linear or small MLP encoder on frozen feats
+def build_head(hidden: int, head_kind: str = "linear") -> nn.Module:
+    kind = (head_kind or "linear").lower()
+    if kind == "linear":
+        return nn.Linear(hidden, 1)
+    if kind == "mlp":
+        return nn.Sequential(
+            nn.Linear(hidden, 256),
+            nn.GELU(),
+            nn.Dropout(0.1),
+            nn.Linear(256, 1),
+        )
+    raise SystemExit(f"unknown head {head_kind!r}")
+    # end
+
+
 class FrozenLinearProbe(nn.Module):
-    def __init__(self, backbone_dir: Path):
+    def __init__(self, backbone_dir: Path, head_kind: str = "linear", interpolate_pos_encoding: bool = False):
         super().__init__()
         top_config = AutoConfig.from_pretrained(backbone_dir, local_files_only=True)
         # 2026-08-29, tianqi, CLIP AutoModel is CLIPModel and needs text ids; image tower only
@@ -33,6 +49,8 @@ class FrozenLinearProbe(nn.Module):
         else:
             self.backbone = AutoModel.from_pretrained(backbone_dir, local_files_only=True)
         self.config = self.backbone.config
+        # 2026-08-30, tianqi, yun exp4 res336: CLIP interpolates pos-emb for non-224 input
+        self._interpolate_pos = bool(interpolate_pos_encoding) and self.config.model_type == "clip_vision_model"
         # end
         for p in self.backbone.parameters():
             p.requires_grad = False
@@ -43,7 +61,10 @@ class FrozenLinearProbe(nn.Module):
             hidden = sizes[-1] if sizes else None
         if not hidden:
             raise SystemExit(f"no hidden size in {backbone_dir}")
-        self.head = nn.Linear(hidden, 1)
+        # 2026-08-29, tianqi, optional MLP encoder on frozen pooled feats
+        self.head = build_head(hidden, head_kind)
+        self.head_kind = head_kind
+        # end
 
     def train(self, mode: bool = True):
         super().train(mode)
@@ -55,7 +76,12 @@ class FrozenLinearProbe(nn.Module):
     def encode(self, pixel_values: torch.Tensor) -> torch.Tensor:
         # 2026-08-29, tianqi, freeze-extract once; linear head trains on cached feats
         with torch.no_grad():
-            out = self.backbone(pixel_values=pixel_values)
+            if self._interpolate_pos:
+                out = self.backbone(
+                    pixel_values=pixel_values, interpolate_pos_encoding=True
+                )
+            else:
+                out = self.backbone(pixel_values=pixel_values)
         return _pool_features(self.config.model_type, out)
         # end
 
