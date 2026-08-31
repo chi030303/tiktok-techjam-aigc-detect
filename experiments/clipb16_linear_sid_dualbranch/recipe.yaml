@@ -1,0 +1,32 @@
+# 2026-08-30, yun, Exp3 ablation vs clipb16_linear_sid_aug baseline: add a frequency (highpass) branch
+name: clipb16_linear_sid_dualbranch
+description: Single-variable ablation of clipb16_linear_sid_aug -- adds a small trainable CNN on the highpass residual of the SAME augmented image, concatenated with frozen CLIP-B/16 RGB features before the linear head. RGB is not replaced.
+owner: yun
+
+backbone: clip-vit-base-patch16
+head: linear
+freeze_backbone: true
+input_mode: rgb
+
+dual_branch:
+  freq_dim: 128
+
+train:
+  datasets:
+    - sid_set
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - official_val
+
+optim:
+  epochs: 3
+  batch_size: 64
+  lr: 0.001
+  num_workers: 4
+
+gpu: "1"
+# end

@@ -1,0 +1,41 @@
+{
+  "experiment": "clipb16_linear_cifake_full",
+  "backbone": "clip-vit-base-patch16",
+  "n_train": 100000,
+  "n_eval": 20000,
+  "train_seconds": 441.98,
+  "eval_seconds": 25.05,
+  "best_eval_acc": 0.935,
+  "final": {
+    "n": 20000,
+    "acc": 0.935,
+    "precision_fake": 0.9314620115056537,
+    "recall_fake": 0.9391
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.30506852553367614,
+      "n": 20000,
+      "acc": 0.91825,
+      "precision_fake": 0.9134130671147573,
+      "recall_fake": 0.9241
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.20292565685272218,
+      "n": 20000,
+      "acc": 0.92925,
+      "precision_fake": 0.9253790506391835,
+      "recall_fake": 0.9338
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.18082350105285644,
+      "n": 20000,
+      "acc": 0.935,
+      "precision_fake": 0.9314620115056537,
+      "recall_fake": 0.9391
+    }
+  ]
+}

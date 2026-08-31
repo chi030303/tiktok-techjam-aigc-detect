@@ -90,6 +90,73 @@ python scripts/run_eval.py score --pred ./outputs/pred.json --split official_val
 Tables land in `outputs/tables/` (csv / md / json). Full transform list and hold-out rules: [docs/data.md](docs/data.md).
 <!-- end -->
 
+## Results
+
+<!-- 2026-08-31, tianqi, contest ranking uses official 0.50×AUC_clean+0.50×AUC_robust; last-night README had SID DINOv2 as submit -->
+**Submit (single ckpt): CLIP-B/16 last-4 unfreeze** — SID 14万 + official online aug. Official val 400 formula **0.990** (full 13843 **0.989**). If two checkpoints are allowed: **mean-logit fuse** of last4 + D3 mix = **0.993**.
+
+Score is **0.50×AUC_clean + 0.50×AUC_robust** (14 transform keys). Acc@0.5 is not the score.
+
+| model | formula 400 | DALL·E AUC | Acc@0.5 | EvalGEN AUROC |
+|---|---:|---:|---:|---:|
+| fuse last4+D3 | **0.993** | 0.995 | 0.888 | **0.997** |
+| CLIP-B unfreeze4 | **0.990** | 0.991 | 0.848 | 0.989 |
+| D3 dualbranch | 0.983 | 0.988 | 0.948 | 0.995 |
+| D3 mix (frozen CLIP-B) | 0.978 | 0.985 | 0.940 | 0.995 |
+| CLIP-L SID-aug | 0.976 | 0.976 | 0.885 | 0.995 |
+| CLIP-B SID-aug | 0.970 | 0.969 | 0.900 | 0.992 |
+| SID DINOv2 frozen | 0.900 | 0.904 | — | 0.964 |
+
+SID dualbranch was 0.966 (drop). D3 dualbranch **0.983** beats frozen D3, still loses to last4/fuse. Full 15-condition tables: [outputs/tables/compare_spec/README.md](outputs/tables/compare_spec/README.md). Error galleries: [docs/badcase-galleries.md](docs/badcase-galleries.md). The DINOv2 write-up in [docs/error_analysis.md](docs/error_analysis.md) is a frozen-head ablation, not the contest submit.
+<!-- end -->
+
+## Reproduce
+
+Contest submit is **CLIP-B last-4**, recipe `experiments/clipb16_linear_sid_unfreeze4/`. Checkpoint is **not** the v0.1 DINOv2 head.
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python scripts/download_backbones.py --only clip-vit-base-patch16
+python predict.py <image_dir> out.json --ckpt /workspace/experiments/clipb16_linear_sid_unfreeze4/ckpts/best.pt
+```
+
+Frozen SID DINOv2 (ablation, formula ~0.90) is still in release `v0.1-model` if you need that write-up:
+
+```bash
+python scripts/download_backbones.py --only dinov2-vit-large-patch14
+gh release download v0.1-model -R chi030303/tiktok-techjam-aigc-detect -p sid_dinov2_best.pt -O checkpoints/sid_dinov2_best.pt
+python predict.py <image_dir> out.json --ckpt checkpoints/sid_dinov2_best.pt
+```
+
+Retraining: `python scripts/run_experiment.py experiments/<name>/recipe.yaml`. Official ranking and 15-condition tables: [outputs/tables/compare_spec/README.md](outputs/tables/compare_spec/README.md).
+
+## Limitations
+
+- **Linear-probe ceiling**: the backbone is frozen; accuracy is bounded by DINOv2
+  features. Partial unfreezing and MLP heads were ablated and did not beat the probe
+  on the demo val.
+- **Scores are not calibrated**: at threshold 0.5 `sid_dinov2` is miss-heavy
+  (FP 10 / FN 88). `pred` is a score — downstream should pick the operating point by
+  their false-accusation budget (see [docs/error_analysis.md](docs/error_analysis.md)).
+- **Generator coverage**: Nova and Infinity remain hard (recall 0.45–0.74 on EvalGEN
+  across all our models). The demo val contains only DALL·E fakes.
+- **Image modality only**, English-only project scope; evaluation subsets are
+  1024²-heavy, so very small thumbnails are under-tested.
+
+## Team & contributions
+
+| Member | Focus |
+|---|---|
+| chi030303 (tianqi) | Tech lead: training/eval infra, recipes, model & data ablations |
+| Jasminetothemoon (Zyun) | Official transforms & manifests, bad-case pipeline + gallery, error analysis |
+| kiki | Training runs, EvalGEN streaming eval, feature cache |
+| James | Dataset research & selection |
+
+*(names/handles — please double-check before Devpost submit)*
+
+Repo must be **public** by 1 Sep 12:00 GMT+8 (Settings → General → Danger zone).
+
 ## Team workflow
 
 - **Daily handbook** (SSH, tmux, venv, GPUs): [docs/dev.md](docs/dev.md)

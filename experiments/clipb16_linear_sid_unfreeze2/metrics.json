@@ -1,0 +1,44 @@
+{
+  "experiment": "clipb16_linear_sid_unfreeze2",
+  "backbone": "clip-vit-base-patch16",
+  "n_unfreeze": 2,
+  "backbone_lr": 1e-05,
+  "head_lr": 0.001,
+  "image_size": 224,
+  "n_train": 140000,
+  "n_eval": 20000,
+  "train_seconds": 3722.09,
+  "best_eval_acc": 0.99835,
+  "final": {
+    "n": 20000,
+    "acc": 0.99825,
+    "precision_fake": 0.9986988289460514,
+    "recall_fake": 0.9978
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.016838015463183236,
+      "n": 20000,
+      "acc": 0.99835,
+      "precision_fake": 0.997802417340925,
+      "recall_fake": 0.9989
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.004310192848110455,
+      "n": 20000,
+      "acc": 0.9973,
+      "precision_fake": 0.9957137161084529,
+      "recall_fake": 0.9989
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.0029172224176823485,
+      "n": 20000,
+      "acc": 0.99825,
+      "precision_fake": 0.9986988289460514,
+      "recall_fake": 0.9978
+    }
+  ]
+}

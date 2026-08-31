@@ -1,0 +1,47 @@
+{
+  "experiment": "clipb16_linear_sid_aug",
+  "backbone": "clip-vit-base-patch16",
+  "online_aug": true,
+  "expand_ops": false,
+  "source": "sid_set",
+  "input_mode": "rgb",
+  "head_kind": "linear",
+  "n_train": 140000,
+  "n_train_items": 140000,
+  "n_eval": 20000,
+  "eval_extract_seconds": 92.65,
+  "train_seconds": 3365.14,
+  "best_eval_acc": 0.9927,
+  "final": {
+    "n": 20000,
+    "acc": 0.9927,
+    "precision_fake": 0.989080802064721,
+    "recall_fake": 0.9964
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.04689452000100698,
+      "n": 20000,
+      "acc": 0.9925,
+      "precision_fake": 0.9922046771936838,
+      "recall_fake": 0.9928
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.02023126309633787,
+      "n": 20000,
+      "acc": 0.99195,
+      "precision_fake": 0.988287841191067,
+      "recall_fake": 0.9957
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.017416849423785293,
+      "n": 20000,
+      "acc": 0.9927,
+      "precision_fake": 0.989080802064721,
+      "recall_fake": 0.9964
+    }
+  ]
+}
