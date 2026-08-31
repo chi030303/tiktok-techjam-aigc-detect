@@ -5,6 +5,16 @@ Contest score = **0.50×AUC_clean + 0.50×AUC_robust**, where AUC_robust is the 
 
 Screen = official demonstration val, **400** images (200 COCO real / 200 DALL·E Advanced), seed 0. Full val (13,843) for last-4 is **0.989**, same ranking.
 
+<!-- 2026-09-01, tianqi, GitHub-visible clean vs transform figures (not Cursor canvas) -->
+## Visual summary (clean vs transformed)
+
+![Clean vs 14-transform AUROC](robustness/clean_vs_transforms.png)
+
+Grouped bars: **AUC clean** vs **mean of 14 transform AUROCs** vs the contest formula. Line chart: the same four models on all 15 official conditions. Weakest keys (JPEG-30, resize ×0.25) are marked.
+
+SVG copies (if PNG does not preview): [clean vs robust](robustness/clean_vs_robust.svg) · [15 conditions](robustness/auroc_15cond.svg). Open [robustness/index.html](robustness/index.html) locally. Rebuild: `python scripts/plot_robustness.py`.
+<!-- end -->
+
 ## Headline
 
 | Model | Formula | AUC_clean | AUC_robust (14) | Acc@0.5 clean |
@@ -38,5 +48,5 @@ EvalGEN never enters training. Nova is the hard family.
 
 Last-4 is conservative at 0.5 (misses Nova); D3 recovers recall; fuse keeps last-4’s DALL·E ranking and D3’s Nova AUC.
 
-CSV sources: `outputs/tables/official_val400_fuse_u4_d3.csv`, `outputs/tables/compare_spec/README.md`.
+CSV sources: `outputs/tables/official_val400_fuse_u4_d3.csv`, `outputs/tables/compare_spec/README.md`. Figure snapshot: `docs/robustness/official_val400.json`.
 # end

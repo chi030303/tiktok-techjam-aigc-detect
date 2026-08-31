@@ -5,7 +5,9 @@
 **Score:** 0.50×AUC_clean + 0.50×AUC_robust. Threshold 0.5 is **not** the contest metric.  
 **Set:** official demo val, 400 balanced (200 COCO real / 200 DALL·E Advanced) unless noted.  
 **Galleries:** download `outputs/tables/badcase_galleries/` and open `index.html` locally ([badcase-galleries.md](badcase-galleries.md)).
-# end
+<!-- 2026-09-01, tianqi, point contest error note at samily gallery + content-pattern pipelines -->
+**Related (evaluation-only):** frozen CLIP-B/L full-val gallery stats — [error_analysis_backbone_ablation.md](error_analysis_backbone_ablation.md); image-property slices — [content-pattern-analysis.md](content-pattern-analysis.md). Reproduce galleries: `python scripts/analyze_badcase_galleries.py`.
+<!-- end -->
 
 ## 1. What the errors look like
 

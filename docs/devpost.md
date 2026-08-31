@@ -5,7 +5,7 @@
 
 **Repo:** https://github.com/chi030303/tiktok-techjam-aigc-detect  
 **Demo video:** *(paste YouTube URL after upload)*  
-**Robustness table:** `docs/robustness.md`  
+**Robustness table:** `docs/robustness.md` (clean vs 14-transform figure in `docs/robustness/`)  
 **Error analysis:** `docs/error_analysis.md`
 
 ---

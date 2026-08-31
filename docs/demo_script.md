@@ -1,78 +1,72 @@
-# Demo 视频脚本（≤3 分钟）
+# 2026-09-01, tianqi, 4 min English talk aligned with the 6-page demo PPT
+# Demo script (4:00, English)
 
-<!-- 2026-08-31, tianqi, last4 0.990 / fuse 0.993; no Streamlit; no DINOv2 0.90 as submit -->
-上传 **YouTube 公开**，链接贴进 Devpost。OBS 录 1080p。先在本机跑通命令再录；终端字体 ≥16pt。
+Record **YouTube Public** and paste the link into Devpost. OBS 1080p. Terminal ≥16 pt if you flash `predict.py`.
 
-**不要做 Streamlit。** 用 4 页 slide + 终端 + 本机打开 `outputs/tables/badcase_galleries/index.html`。  
-**不要念 DINOv2 0.90。** 提交分是 CLIP-B last4 **0.990**，双 ckpt 则 fuse **0.993**。
+**Deck:** `docs/slides/TechJam_Challenge5_demo.pptx` (6 slides). Speaker notes on each slide are the same lines as below. Team deep-dive stays on `TechJam_Challenge5.pptx`.
+
+**Do not** build Streamlit. **Do not** say DINOv2 0.90 as the submit score. Submit is CLIP-B last-4 **0.990**; two checkpoints → mean-logit fuse **0.993**. Do not say D3/D4/D5/D6.
+
+Devpost lists a 3-minute video; this talk is **4:00**. If you must cut, drop the mix-in counts on slide 2 (keep “SID is 90%”).
+
+Pace ≈ 125–130 wpm. Total ≈ 510 words.
+
 # end
 
-屏幕上的英文标题可以照抄（评委看 YouTube）。
+## Slide 1 — Cover (0:00–0:25)
 
-## 分镜 0（0:00–0:25）问题
+**On screen:** title, TikTok TechJam 2026, Team Jambuddy, five names.
 
-**画面：** 一页 slide。
+**Say:**
+> Hi, we are Team Jambuddy. After a photo is shared, it is JPEG-compressed, blurred, and cropped. The contest score is point-five times clean AUC plus point-five times the mean AUC under fourteen official transforms — not accuracy at threshold zero-point-five. Our detector is CLIP-B, about eighty-six million parameters, well under the two-billion cap.
 
-**标题：** Robust AIGC detection under JPEG / blur / crop
+## Slide 2 — Mixed data (0:25–1:10)
 
-**台词：**
-> 社交流转后的图会被压缩、模糊、裁剪。赛题分数是 0.50×干净 AUC + 0.50×14 种变换后的 AUC，不是 0.5 阈值准确率。
-> 我们用约 8600 万参数的 CLIP-B：解冻最后 4 层，在官方 400 子集上公式分 0.990；如果允许两个权重，和 D3 数据混合模型做 logit 平均，到 0.993。
+**On screen:** SID banner (~140k, ~90%) and per-generator mix-in counts.
 
-## 分镜 1（0:25–1:15）端到端推理
+**Say:**
+> Most of the training set is still SID_Set: about one hundred and forty thousand images, ninety percent of train — seventy thousand real photos and seventy thousand FLUX fakes. We do not stack more FLUX. We replace an equal number of SID FLUX with a thin mix-in of other generators: WildFake original SD three thousand nine hundred; SDXL fifteen hundred; PixArt, Stable Diffusion 3.5, Flux.2, nano banana, and GPT-image at fifteen hundred each; ADM and DDPM at one thousand each. These fakes are self-built from local checkpoints and ComfyUI, and we will open-source the mix. No GAN in train: the contest and EvalGEN are diffusion, flow, and autoregressive. Hunyuan is not used.
 
-**画面：** 终端。
+## Slide 3 — Fuse architecture (1:10–1:55)
+
+**On screen:** CLIP-B last-4 plus mean-logit fuse diagram.
+
+**Say:**
+> We unfreeze the last four CLIP-B vision blocks. That scores zero-point-nine-nine-zero on the official four-hundred screen. A larger backbone does not help: CLIP-L last-four is zero-point-nine-eight-zero; ResNet SID is zero-point-seven-seven-nine; DINOv2 is about zero-point-seven-nine. Resize three-three-six, RGB plus frequency, and unfreezing the first four all lose on the contest formula. If two checkpoints are allowed, we average logits of last-four and a mixed-data head. That fuse is zero-point-nine-nine-three. Inference is one command: a folder of images in, JSON out, and pred is the probability the image is AIGC. Official val never enters training.
+
+Optional 10 s cutaway (same clock, do not add a seventh beat):
 
 ```bash
-pip install -r requirements.txt
-pip install torch torchvision transformers
-python scripts/download_backbones.py --only clip-vit-base-patch16
-
 python predict.py data/val/fake out.json \
-  --ckpt experiments/clipb16_linear_sid_unfreeze4/ckpts/best.pt
-python -c "import json; print(json.load(open('out.json'))[:3])"
-```
-
-可选再跑一行 fuse（如果录双模）：
-
-```bash
-python predict.py data/val/fake out_fuse.json \
   --ckpt experiments/clipb16_linear_sid_unfreeze4/ckpts/best.pt \
   --ckpt-b experiments/clipb16_linear_sid_d3_mix/ckpts/best.pt
 ```
 
-**台词：**
-> 官方接口：一个图片目录进，JSON 出。每条是 image_path 和 pred，pred 是 AIGC 的置信度。
-> 演示集 COCO + DALL·E 没有进训练。模型远小于 2B。
+## Slide 4 — Evaluation (1:55–2:45)
 
-## 分镜 2（1:15–2:15）鲁棒性 + 错例
+**On screen:** left official-val curves; right EvalGEN / Nova.
 
-**画面：** `docs/robustness.md` 或 README 的 15 档表；然后打开  
-`outputs/tables/badcase_galleries/fuse_u4_d3_400_clean.html` 或 `unfreeze4_400_clean.html`。  
-先 FN（漏检 DALL·E），再 FP（几乎没有）。
+**Say:**
+> Left is the contest score. Official val is COCO reals plus DALL·E Advanced. Frozen SID on the full thirteen thousand eight hundred forty-three images is zero-point-nine-six-six. Last-four on that full set is zero-point-nine-eight-nine — same ranking as the four-hundred screen. Right is EvalGEN: Flux, GoT, Infinity, OmniGen, and Nova, never trained. Nova is the hard family. Mixed data lifts Nova recall at zero-point-five from zero-point-four-nine to zero-point-eight-six, and Nova AUC to zero-point-nine-eight-eight. Fuse keeps last-four’s DALL·E ranking and the mixed head’s Nova AUC.
 
-**台词：**
-> 14 种官方变换下 last4 的 AUROC 都在 0.98 以上。
-> 0.5 阈值时 fuse 只有 1 张误杀、44 张漏检——低误杀、偏保守。分数高不代表 0.5 就是好工作点。
+## Slide 5 — Bad-case gallery (2:45–3:25)
 
-## 分镜 3（2:15–2:40）未见生成器
+**On screen:** FN Badcases (left) and FP Badcases (right).
 
-**画面：** robustness 里 EvalGEN / Nova 那张小表。
+**Say:**
+> We ship an HTML gallery: false positives versus false negatives, sorted by worst prediction. On the full official val, frozen SID has one hundred fifty false positives and one thousand eight hundred sixty-five false negatives. Many misses are non-photoreal DALL·E — anime and illustration — scored near zero-point-zero-zero-one. False positives are real COCO photos scored above zero-point-nine-eight. At threshold zero-point-five, fuse on the four-hundred screen is one false positive and forty-four false negatives: low false-accusation, still conservative. A high AUC does not mean zero-point-five is the right operating point.
 
-**台词：**
-> EvalGEN 五家生成器都没进训练。Nova 最难。D3 混合数据把 Nova 召回拉上去；fuse 保住官方 DALL·E 分数，同时 Nova AUC 到 0.988。
+## Slide 6 — 15 official conditions (3:25–4:00)
 
-## 分镜 4（2:40–3:00）复现
+**On screen:** fifteen-condition AUROC table.
 
-**画面：** README Reproduce 四行命令。
+**Say:**
+> The contest formula is half clean AUC and half the mean of fourteen transform keys: JPEG, blur, resize, noise, jitter, and center crop. Fuse stays at or above zero-point-nine-eight-four on every key. The weakest keys are JPEG quality thirty and resize by one quarter. Mixed data dips there; SID is flatter but lower. The repository is public. Install CLIP-B, load the checkpoint, run predict.py. Thank you.
 
-**台词：**
-> 仓库公开。按 README 装 CLIP-B、下权重、对任意目录跑 predict.py 即可复现。
+## Before you record
 
-## 拍摄前
-
-- [ ] README / robustness 数字是 last4 0.990、fuse 0.993
-- [ ] 本机有 `data/val` 或一小撮图，不要用带商标的素材
-- [ ] 画册已下载到本机（Vast Jupyter 打不开）
-- [ ] 不要入镜第三方 logo
-- [ ] 上传 YouTube → Public → 链接进 Devpost
+- [ ] Notes pane matches this script; do not ad-lib D-codes or DINOv2 0.90
+- [ ] Numbers: last-4 **0.990**, fuse **0.993**, last-4 full val **0.989**
+- [ ] No third-party logos on camera
+- [ ] YouTube → Public → paste into Devpost
+# end

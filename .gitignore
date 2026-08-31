@@ -92,3 +92,6 @@ cursor_tiktok_techjam_information.md
 cursor_fifth_topic_summary_request.md
 techjam.md
 *.md.bak
+# 2026-09-01, tianqi, Office lock files from open PPTX
+**/~$*.pptx
+# end
