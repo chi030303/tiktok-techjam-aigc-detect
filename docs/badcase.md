@@ -95,6 +95,26 @@ FP 区（真图误判为 AI，红框，置信度最高的排最前）+ FN 区
 stdout 与 HTML meta 行都带 `thumbnails ok/shown` 计数；**全部缺失时额外打 stderr
 告警**，先检查 `--predict-root` 与文件是否还在。
 
+## 从画册生成 Error Analysis Note
+
+`analyze_badcase_galleries.py` 读取两个或更多全量 gallery，计算 FP/FN、错误分数分布和
+跨模型错误重合度，同时输出可审计的 JSON 与 Markdown 初稿：
+
+```bash
+python scripts/analyze_badcase_galleries.py \
+  --gallery 'clipb16_sid=<gallery-dir>/clipb16_sid_full_clean/index.html' \
+  --gallery 'clipl14_sid=<gallery-dir>/clipl14_sid_full_clean/index.html' \
+  --auroc clipb16_sid=0.9655 --auroc clipl14_sid=0.9766 \
+  --n-real 5000 --n-fake 8843 \
+  --out-md docs/error_analysis_backbone_ablation.md \
+  --out-json outputs/tables/badcase_backbone_ablation.json
+```
+
+gallery 只含错例，没有完整预测分布，因此 `n_real/n_fake` 必须显式提供；AUROC 必须来自
+同一数据、同一 condition 的评测表。脚本不会根据图片自动猜视觉归因，Markdown 中的
+人工标注协议用于后续肉眼复核。拿到 last4/fuse gallery 后只需替换 `--gallery` 和
+`--auroc` 即可重跑最终版。
+
 ## 条件命名对照（manifest transform_key ↔ robustness condition）
 
 manifest 侧（`src/transforms/spec.py` 的 transform_key）与 robustness 表侧

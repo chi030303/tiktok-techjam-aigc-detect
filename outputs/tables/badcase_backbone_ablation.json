@@ -1,0 +1,91 @@
+{
+  "scope": {
+    "condition": "clean",
+    "threshold": 0.5,
+    "n_real": 5000,
+    "n_fake": 8843,
+    "n": 13843
+  },
+  "models": [
+    {
+      "name": "clipb16_sid",
+      "threshold": 0.5,
+      "n": 13843,
+      "n_real": 5000,
+      "n_fake": 8843,
+      "fp": 150,
+      "fn": 1865,
+      "fpr": 0.03,
+      "fnr": 0.21090127784688453,
+      "accuracy": 0.8544390666762984,
+      "auroc": 0.9655,
+      "score_distribution": {
+        "FP": {
+          "min": 0.5,
+          "q25": 0.645,
+          "median": 0.78,
+          "q75": 0.90375,
+          "max": 0.998
+        },
+        "FN": {
+          "min": 0.0,
+          "q25": 0.018,
+          "median": 0.093,
+          "q75": 0.243,
+          "max": 0.498
+        }
+      }
+    },
+    {
+      "name": "clipl14_sid",
+      "threshold": 0.5,
+      "n": 13843,
+      "n_real": 5000,
+      "n_fake": 8843,
+      "fp": 80,
+      "fn": 2173,
+      "fpr": 0.016,
+      "fnr": 0.24573108673527083,
+      "accuracy": 0.8372462616484866,
+      "auroc": 0.9766,
+      "score_distribution": {
+        "FP": {
+          "min": 0.5,
+          "q25": 0.623,
+          "median": 0.7985,
+          "q75": 0.9022500000000001,
+          "max": 0.997
+        },
+        "FN": {
+          "min": 0.0,
+          "q25": 0.014,
+          "median": 0.084,
+          "q75": 0.245,
+          "max": 0.5
+        }
+      }
+    }
+  ],
+  "overlaps": [
+    {
+      "left": "clipb16_sid",
+      "right": "clipl14_sid",
+      "error_type": "FP",
+      "intersection": 33,
+      "union": 197,
+      "jaccard": 0.16751269035532995,
+      "share_of_left": 0.22,
+      "share_of_right": 0.4125
+    },
+    {
+      "left": "clipb16_sid",
+      "right": "clipl14_sid",
+      "error_type": "FN",
+      "intersection": 1174,
+      "union": 2864,
+      "jaccard": 0.4099162011173184,
+      "share_of_left": 0.6294906166219839,
+      "share_of_right": 0.5402669121030833
+    }
+  ]
+}
