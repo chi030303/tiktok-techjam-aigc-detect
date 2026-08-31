@@ -56,6 +56,10 @@ python scripts/run_badcase.py --pred outputs/pred_evalgen.json \
 排最前）、缩略图 base64 内嵌；单文件产物，scp 回本地浏览器打开即可，不需要
 服务器在线。
 
+<!-- 2026-08-31, tianqi, current high-AUC galleries + do not open on Vast Jupyter -->
+组员看画册：把 `outputs/tables/badcase_galleries/` 和 `badcase_compare/` **下到本机**，打开 `index.html`。Vast Jupyter / 文件浏览器点不开。步骤见 [badcase-galleries.md](badcase-galleries.md)。当前入口含 fuse 400、last4、D3 mix 等。
+<!-- end -->
+
 ```bash
 # 服务器实战：compare_spec 里某模型 clean 条件的 bad case（注意 --predict-root）
 python scripts/badcase_gallery.py \

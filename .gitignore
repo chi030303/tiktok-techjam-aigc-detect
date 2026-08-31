@@ -33,6 +33,14 @@ outputs/*
 !outputs/tables/.gitkeep
 !outputs/tables/*.csv
 !outputs/tables/*.md
+# 2026-08-31, tianqi, keep nested result tables; skip bulky gallery html/jsonl
+!outputs/tables/**/*.csv
+!outputs/tables/**/*.md
+!outputs/tables/**/*.json
+outputs/tables/badcase_galleries/**
+!outputs/tables/badcase_galleries/index.html
+outputs/tables/badcase_compare/*.html
+outputs/tables/badcase_galleries/jsonl/
 # end
 # 2026-08-29, tianqi, keep recipes; drop per-run artifacts
 experiments/**/runs/

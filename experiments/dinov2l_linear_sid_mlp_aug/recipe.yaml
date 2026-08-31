@@ -1,0 +1,39 @@
+# 2026-08-30, tianqi, MLP on SID with online random official aug (clean+robust mix)
+name: dinov2l_linear_sid_mlp_aug
+description: SID_Set (label 0/1 only), frozen DINOv2-L MLP, p_clean=0.2 random 6-op.
+owner: kiki
+
+backbone: dinov2-vit-large-patch14
+head: mlp
+freeze_backbone: true
+input_mode: rgb
+
+train:
+  datasets:
+    - sid_set
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - official_val
+
+aug:
+  online: true
+  jpeg: true
+  blur: true
+  resize: true
+  noise: true
+  jitter: true
+  center_crop: true
+
+optim:
+  epochs: 3
+  batch_size: 32
+  lr: 0.001
+  num_workers: 4
+  cache_features: false
+
+gpu: "1"
+# end

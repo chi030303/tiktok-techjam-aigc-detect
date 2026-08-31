@@ -64,11 +64,20 @@ def artifact_dir(name: str) -> Path:
     return d
 
 
-def feat_cache_path(backbone: str, split: str, n: int, seed: int, size: int = 224) -> Path:
+def feat_cache_path(
+    backbone: str,
+    split: str,
+    n: int,
+    seed: int,
+    size: int = 224,
+    source: str = "cifake",
+    input_mode: str = "rgb",
+) -> Path:
     # 2026-08-29, tianqi, shared feat cache so lr/epoch sweeps skip backbone
     d = exp_root() / "_featcache" / backbone
     d.mkdir(parents=True, exist_ok=True)
-    return d / f"cifake_{split}_n{n}_seed{seed}_s{size}.pt"
+    extra = "" if (input_mode or "rgb") in ("rgb", "clean") else f"_{input_mode}"
+    return d / f"{source}_{split}_n{n}_seed{seed}_s{size}{extra}.pt"
     # end
 
 

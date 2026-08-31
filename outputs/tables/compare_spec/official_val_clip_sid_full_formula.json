@@ -1,0 +1,20 @@
+{
+  "clipb16_sid": {
+    "auc_clean": 0.9654530249915187,
+    "auc_robust": 0.9658427117494063,
+    "n_robust": 14,
+    "n_robust_expected": 14,
+    "complete": true,
+    "formula": 0.9656478683704626,
+    "model": "clipb16_sid"
+  },
+  "clipl14_sid": {
+    "auc_clean": 0.9765580911455388,
+    "auc_robust": 0.9775762742120483,
+    "n_robust": 14,
+    "n_robust_expected": 14,
+    "complete": true,
+    "formula": 0.9770671826787936,
+    "model": "clipl14_sid"
+  }
+}

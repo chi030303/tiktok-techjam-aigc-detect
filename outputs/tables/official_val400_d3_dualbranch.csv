@@ -1,0 +1,16 @@
+model,split,condition,n,n_real,n_fake,acc,auroc,precision_fake,recall_fake,fpr,mean_pred,threshold
+d3_dualbranch,official_val,clean,400,200,200,0.9475,0.9884,0.9891,0.9050,0.0100,0.4605,0.5000
+d3_dualbranch,official_val,jpeg_q90,400,200,200,0.9475,0.9879,0.9786,0.9150,0.0200,0.4645,0.5000
+d3_dualbranch,official_val,jpeg_q70,400,200,200,0.9325,0.9840,0.9727,0.8900,0.0250,0.4606,0.5000
+d3_dualbranch,official_val,jpeg_q50,400,200,200,0.8975,0.9692,0.9206,0.8700,0.0750,0.4758,0.5000
+d3_dualbranch,official_val,jpeg_q30,400,200,200,0.9000,0.9625,0.9255,0.8700,0.0700,0.4786,0.5000
+d3_dualbranch,official_val,blur_s05,400,200,200,0.9475,0.9888,0.9891,0.9050,0.0100,0.4570,0.5000
+d3_dualbranch,official_val,blur_s10,400,200,200,0.9450,0.9894,0.9837,0.9050,0.0150,0.4544,0.5000
+d3_dualbranch,official_val,blur_s20,400,200,200,0.9200,0.9736,0.9421,0.8950,0.0550,0.4795,0.5000
+d3_dualbranch,official_val,resize_s05,400,200,200,0.9425,0.9870,0.9784,0.9050,0.0200,0.4581,0.5000
+d3_dualbranch,official_val,resize_s025,400,200,200,0.8975,0.9582,0.8955,0.9000,0.1050,0.5085,0.5000
+d3_dualbranch,official_val,noise_s002,400,200,200,0.9225,0.9776,0.9378,0.9050,0.0600,0.4772,0.5000
+d3_dualbranch,official_val,noise_s005,400,200,200,0.9125,0.9752,0.9319,0.8900,0.0650,0.4781,0.5000
+d3_dualbranch,official_val,noise_s010,400,200,200,0.9025,0.9764,0.9351,0.8650,0.0600,0.4611,0.5000
+d3_dualbranch,official_val,jitter_p20,400,200,200,0.9325,0.9846,0.9626,0.9000,0.0350,0.4612,0.5000
+d3_dualbranch,official_val,crop_p80,400,200,200,0.9275,0.9774,0.9777,0.8750,0.0200,0.4371,0.5000

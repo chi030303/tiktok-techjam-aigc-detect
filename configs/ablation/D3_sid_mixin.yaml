@@ -1,0 +1,10 @@
+# 2026-08-31, tianqi, D3 mix-in note; actual jsonl is built by scripts/build_d3_mixin.py
+name: D3_sid_mixin
+seed: 20260831
+notes: >
+  Not an 8k+8k probe. Train is full SID parquet (~140k) with this fake mix-in
+  replacing an equal number of SID FLUX fakes. Self-built from
+  /workspace/data_new/output, 4k WildFake sd_original (UNet), plus a thin
+  ADM/DDPM pixel slice (~1k each). Unseen remains official val DALL·E (and
+  EvalGEN). No EvalGEN images in train, no data/val.
+# end

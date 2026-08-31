@@ -1,0 +1,19 @@
+{
+  "base": "clipb16_sid",
+  "new": "D3_mix",
+  "n_overlap": 400,
+  "n_real": 200,
+  "n_fake": 200,
+  "threshold": 0.5,
+  "ok": 355,
+  "fn_remain": 18,
+  "fn_fixed": 19,
+  "fn_new": 2,
+  "fp_fixed": 2,
+  "fp_new": 3,
+  "fp_remain": 1,
+  "fn_base": 37,
+  "fn_new_model": 20,
+  "fp_base": 3,
+  "fp_new_model": 4
+}

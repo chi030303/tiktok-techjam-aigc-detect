@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>Bad-case galleries</title>
+  <style>
+    body { font-family: sans-serif; max-width: 760px; margin: 2rem auto; }
+    li { margin: 0.35rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Bad-case galleries</h1>
+  <!-- 2026-08-31, tianqi, tell teammates to download; Vast Jupyter will not render -->
+  <p>Self-contained HTML (embedded thumbnails). <strong>Download the folder and open <code>index.html</code> in a local browser.</strong> Vast Jupyter / the file browser will not render these pages.</p>
+  <!-- end -->
+  <h2>How to read</h2>
+  <p>FP = real flagged as fake (误杀真图). FN = fake scored as real (漏检). Threshold 0.5; AUROC can be high with many FN.</p>
+  <h2>Pairwise: what got fixed vs SID-aug / last4 / D3 (400 clean)</h2>
+  <p>Open these after the single-model galleries. Remaining FN/FP are the residual errors of the <em>new</em> model.</p>
+  <ul>
+    <li><a href="../badcase_compare/clipb16_sid_to_unfreeze4.html">SID-aug → last4</a></li>
+    <li><a href="../badcase_compare/clipb16_sid_to_D3_mix.html">SID-aug → D3</a></li>
+    <li><a href="../badcase_compare/unfreeze4_to_D3_mix.html">last4 → D3</a></li>
+    <li><a href="../badcase_compare/clipb16_sid_to_fuse_u4_d3.html">SID-aug → fuse</a></li>
+    <li><a href="../badcase_compare/unfreeze4_to_fuse_u4_d3.html">last4 → fuse</a></li>
+    <li><a href="../badcase_compare/D3_mix_to_fuse_u4_d3.html">D3 → fuse</a></li>
+  </ul>
+  <h2>400-subset official val (clean) — high AUC</h2>
+  <ul>
+    <li><a href="fuse_u4_d3_400_clean.html">fuse last4 + D3</a> — 1 FP / 44 FN</li>
+    <li><a href="unfreeze4_400_clean.html">CLIP-B unfreeze4</a> — 1 FP / 60 FN</li>
+    <li><a href="D3_mix_400_clean.html">D3 mix</a> — 4 FP / 20 FN</li>
+    <li>D3 dualbranch — 2 FP / 19 FN (400 metrics only; no extra gallery)</li>
+    <li><a href="clipl14_unfreeze4_400_clean.html">CLIP-L unfreeze4</a> — 1 FP / 46 FN</li>
+    <li><a href="unfreeze4_res336_400_clean.html">unfreeze4 + 336</a> — 0 FP / 71 FN</li>
+    <li><a href="clipb16_sid_400_clean.html">CLIP-B SID-aug</a> — 3 FP / 37 FN</li>
+    <li><a href="clipl14_sid_400_clean.html">CLIP-L SID-aug</a> — 1 FP / 45 FN</li>
+    <li><a href="clipb16_clean_400_clean.html">CIFAKE CLIP-B</a></li>
+    <li><a href="dinov2_clean_400_clean.html">CIFAKE DINOv2</a></li>
+  </ul>
+  <h2>Full official val (clean)</h2>
+  <ul>
+    <li><a href="clipb16_sid_full_clean.html">CLIP-B SID-aug</a> — 150 FP / 1865 FN</li>
+    <li><a href="clipl14_sid_full_clean.html">CLIP-L SID-aug</a> — 80 FP / 2173 FN</li>
+    <li><a href="D1_sid_full_clean.html">D1 8k SID FLUX</a> — 1730 FP / 2759 FN</li>
+    <li><a href="C_flow_full_clean.html">C-Flow 1k FLUX</a></li>
+    <li><a href="C_pixel_full_clean.html">C-Pixel ADM+DDPM</a> — 1 FP / 8838 FN</li>
+  </ul>
+  <h2>400 robustness (SID CLIP only)</h2>
+  <ul>
+    <li><a href="clipb16_sid_400_jpeg_q50.html">CLIP-B SID jpeg_q50</a></li>
+    <li><a href="clipb16_sid_400_crop_p80.html">CLIP-B SID crop_p80</a></li>
+    <li><a href="clipl14_sid_400_jpeg_q50.html">CLIP-L SID jpeg_q50</a></li>
+    <li><a href="clipl14_sid_400_crop_p80.html">CLIP-L SID crop_p80</a></li>
+  </ul>
+</body>
+</html>

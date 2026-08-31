@@ -27,13 +27,23 @@
 `data/val` **就是题面那份 Demonstration 集**：不算分、只用来看迭代和 robustness 表。**不是** 主办方隐藏打分测试集。目录内 `DO_NOT_TRAIN`。训练 loader 不得扫描 `data/val/`、`data/evalgen/`、`data/demo_wildfake/`。
 
 # 2026-08-30, tianqi, full WildFake is a train source; only the demo subset stays hold-out
-**WildFake 全量**（`data/wildfake/`）不是演示集，**可以训**，但必须先丢掉和 `data/val` 重叠的部分（COCO val2017、DALL·E Advanced、phash）。不要给全量树打 `DO_NOT_TRAIN`。EvalGEN 仍然禁止训练。
+**WildFake 全量**不是演示集，**可以训**，但必须先丢掉和 `data/val` 重叠的部分（COCO val2017、DALL·E Advanced、phash）。不要给全量树打 `DO_NOT_TRAIN`。EvalGEN 仍然禁止训练。
+
+# 2026-08-30, tianqi, do not snapshot the whole WildFake; teammates own ADM/DDPM/Imagen
+按维度下，不要再跑 `scripts/download_wildfake.py`（会整库 snapshot，和同学抢带宽/盘）。共享目录：
+
+| 维度 | 状态 | 路径 |
+|---|---|---|
+| ADM | 已就位 ~15.5 万张 | `data/wildfake/cross_arch/adm/` |
+| DDPM | 已就位 ~7.7 万张 | `data/wildfake/cross_arch/ddpm/` |
+| Imagen / UNet 等 | 同学在下，不要重复拉 | 等他们写进 `data/wildfake/` |
+
+训之前仍要排除 `data/val` 重叠。
 # end
 
 ```bash
 python scripts/download_official_val.py          # -> data/val  or /workspace/data/val
 python scripts/download_evalgen.py              # extra hold-out, not official val
-python scripts/download_wildfake.py            # full corpus for train; not data/val
 python scripts/download_backbones.py             # CLIP-B/16, CLIP-L/14, ResNet-50, DINOv2-L/14
 ```
 
@@ -43,7 +53,7 @@ python scripts/download_backbones.py             # CLIP-B/16, CLIP-L/14, ResNet-
 |---|---|---|---|
 | CIFAKE | 冒烟、短实验 | [Kaggle](https://www.kaggle.com/datasets/birdy654/cifake-real-and-ai-generated-synthetic-images) | `data/cifake/` |
 | SID_Set | 主训练（优先） | [HF saberzl/SID_Set](https://huggingface.co/datasets/saberzl/SID_Set) | `data/sid_set/` |
-| WildFake 全量 | 训练（排除 `data/val` 重叠后） | `python scripts/download_wildfake.py` | `data/wildfake/` |
+| WildFake 分维 | 训练（排除 `data/val` 重叠后） | 同学在下；不要再 snapshot 全库 | `data/wildfake/cross_arch/` |
 
 公开、有授权即可。标签只有 **真 / 假**，不要物体类别。人货背景混在一起训。
 

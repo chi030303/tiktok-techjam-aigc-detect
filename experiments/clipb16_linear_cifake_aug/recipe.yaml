@@ -1,0 +1,38 @@
+# 2026-08-29, tianqi, CIFAKE + online TechJam aug (CLIP ViT-B/16)
+name: clipb16_linear_cifake_aug
+description: Full CIFAKE, frozen CLIP ViT-B/16, online random official transforms on train.
+owner: kiki
+
+backbone: clip-vit-base-patch16
+head: linear
+freeze_backbone: true
+
+train:
+  datasets:
+    - cifake
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - cifake_test
+
+aug:
+  online: true
+  jpeg: true
+  blur: true
+  resize: true
+  noise: true
+  jitter: true
+  center_crop: true
+
+optim:
+  epochs: 3
+  batch_size: 128
+  lr: 0.001
+  num_workers: 8
+  cache_features: false
+
+gpu: "1"
+# end

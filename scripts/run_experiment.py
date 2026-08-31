@@ -53,6 +53,19 @@ def main() -> None:
         gpu = recipe.get("gpu")
         if gpu is not None:
             os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu)
+        # 2026-08-31, tianqi, partial-unfreeze cannot use the frozen feat-cache loop
+        if recipe.get("partial_unfreeze"):
+            from src.train.partial_unfreeze_train import run_train_partial_unfreeze
+
+            run_train_partial_unfreeze(recipe)
+            return
+        # 2026-08-31, tianqi, dual-branch needs RGB+highpass loaders, not feat-cache
+        if recipe.get("dual_branch"):
+            from src.train.dual_branch_train import run_train_dual_branch
+
+            run_train_dual_branch(recipe)
+            return
+        # end
         from src.train.loop import run_train
 
         run_train(recipe)

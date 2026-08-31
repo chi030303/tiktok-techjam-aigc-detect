@@ -1,0 +1,29 @@
+{
+  "D1_sid": {
+    "auc_clean": 0.7369290851520977,
+    "auc_robust": 0.731275577938967,
+    "n_robust": 14,
+    "n_robust_expected": 14,
+    "complete": true,
+    "formula": 0.7341023315455324,
+    "model": "D1_sid"
+  },
+  "C_flow": {
+    "auc_clean": 0.6699004071016623,
+    "auc_robust": 0.6389512342288493,
+    "n_robust": 14,
+    "n_robust_expected": 14,
+    "complete": true,
+    "formula": 0.6544258206652558,
+    "model": "C_flow"
+  },
+  "C_pixel": {
+    "auc_clean": 0.6491452109012779,
+    "auc_robust": 0.6480154593625305,
+    "n_robust": 14,
+    "n_robust_expected": 14,
+    "complete": true,
+    "formula": 0.6485803351319042,
+    "model": "C_pixel"
+  }
+}

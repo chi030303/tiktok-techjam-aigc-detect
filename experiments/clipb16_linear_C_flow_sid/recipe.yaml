@@ -1,0 +1,37 @@
+# 2026-08-30, tianqi, C-Flow 8k SID real + 1k SID FLUX probe, frozen CLIP-B
+name: clipb16_linear_C_flow_sid
+description: DATA_ABLATION_PLAN C-Flow. Same SID reals, 1k flow t2i fakes.
+owner: kiki
+
+backbone: clip-vit-base-patch16
+head: linear
+freeze_backbone: true
+input_mode: rgb
+
+train:
+  datasets:
+    - manifest
+  manifest: data/manifests/ablation/C_flow_sid.jsonl
+  eval_manifest: data/manifests/source_sid_val.jsonl
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - official_val
+  - evalgen
+
+aug:
+  online: false
+
+optim:
+  epochs: 3
+  batch_size: 64
+  lr: 0.001
+  num_workers: 4
+  cache_features: true
+  seed: 20260830
+
+gpu: "0"
+# end

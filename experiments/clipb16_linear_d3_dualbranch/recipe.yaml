@@ -1,0 +1,45 @@
+# 2026-08-31, tianqi, D3 mix + frozen CLIP-B dual-branch (highpass CNN)
+name: clipb16_linear_d3_dualbranch
+description: D3 SID-full mix (replace 9622 FLUX) + frozen CLIP-B RGB + highpass CNN. Not stacked with unfreeze4.
+owner: kiki
+
+backbone: clip-vit-base-patch16
+head: linear
+freeze_backbone: true
+input_mode: rgb
+
+dual_branch:
+  freq_dim: 128
+
+train:
+  datasets:
+    - sid_set
+  mixin_manifest: data/manifests/ablation/D3_sid_mixin.jsonl
+  replace_sid_fakes: true
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - official_val
+  - evalgen
+
+aug:
+  online: true
+  jpeg: true
+  blur: true
+  resize: true
+  noise: true
+  jitter: true
+  center_crop: true
+
+optim:
+  epochs: 3
+  batch_size: 64
+  lr: 0.001
+  num_workers: 4
+  seed: 20260831
+
+gpu: "0"
+# end

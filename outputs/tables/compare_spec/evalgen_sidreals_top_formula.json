@@ -1,0 +1,38 @@
+{
+  "unfreeze4": {
+    "auc_clean": 0.988786325,
+    "auc_robust": null,
+    "n_robust": 0,
+    "n_robust_expected": 14,
+    "complete": false,
+    "formula": 0.988786325,
+    "model": "unfreeze4"
+  },
+  "unfreeze2": {
+    "auc_clean": 0.9911044,
+    "auc_robust": null,
+    "n_robust": 0,
+    "n_robust_expected": 14,
+    "complete": false,
+    "formula": 0.9911044,
+    "model": "unfreeze2"
+  },
+  "clipl14_sid": {
+    "auc_clean": 0.9949584,
+    "auc_robust": null,
+    "n_robust": 0,
+    "n_robust_expected": 14,
+    "complete": false,
+    "formula": 0.9949584,
+    "model": "clipl14_sid"
+  },
+  "clipb16_sid": {
+    "auc_clean": 0.991305525,
+    "auc_robust": null,
+    "n_robust": 0,
+    "n_robust_expected": 14,
+    "complete": false,
+    "formula": 0.991305525,
+    "model": "clipb16_sid"
+  }
+}

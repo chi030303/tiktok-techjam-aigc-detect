@@ -146,18 +146,56 @@ def _predict_rows(
     sid_reals_otf: bool,
     max_reals: int | None,
     seed: int,
+    fuse=None,
 ) -> list[dict]:
-    from src.eval.stream_predict import SidValRealConditionDataset, predict_dataset, predict_labeled
+    from src.eval.stream_predict import (
+        DualSidValRealConditionDataset,
+        SidValRealConditionDataset,
+        predict_dataset,
+        predict_fused_dataset,
+        predict_fused_labeled,
+        predict_labeled,
+    )
+
+    if fuse is not None:
+        pred_a, pred_b, weight = fuse
+        if sid_reals_otf:
+            fakes = [(p, y) for p, y in rows if int(y) == 1]
+            preds = predict_fused_labeled(
+                pred_a, pred_b, fakes, src_root, condition, workers=workers, weight=weight
+            )
+            sid_ds = SidValRealConditionDataset(
+                condition,
+                input_mode=pred_a.input_mode,
+                max_images=max_reals,
+                seed=seed,
+            )
+            preds.extend(predict_fused_dataset(pred_a, pred_b, sid_ds, workers=0, weight=weight))
+            return preds
+        return predict_fused_labeled(
+            pred_a, pred_b, rows, src_root, condition, workers=workers, weight=weight
+        )
 
     if sid_reals_otf:
         fakes = [(p, y) for p, y in rows if int(y) == 1]
         preds = predict_labeled(predictor, fakes, src_root, condition, workers=workers)
-        sid_ds = SidValRealConditionDataset(
-            condition,
-            input_mode=predictor.input_mode,
-            max_images=max_reals,
-            seed=seed,
-        )
+        # 2026-08-31, tianqi, dual-branch EvalGEN reals must return rgb+highpass
+        if getattr(predictor, "dual", False):
+            sid_ds = DualSidValRealConditionDataset(
+                condition,
+                input_mode=predictor.input_mode,
+                max_images=max_reals,
+                seed=seed,
+                image_size=int(getattr(predictor, "image_size", 224) or 224),
+            )
+        else:
+            sid_ds = SidValRealConditionDataset(
+                condition,
+                input_mode=predictor.input_mode,
+                max_images=max_reals,
+                seed=seed,
+            )
+        # end
         preds.extend(predict_dataset(predictor, sid_ds, workers=0))
         return preds
     return predict_labeled(predictor, rows, src_root, condition, workers=workers)
@@ -183,6 +221,8 @@ def main() -> None:
     parser.add_argument("--out-dir", type=Path, default=None)
     parser.add_argument("--stem", default=None)
     parser.add_argument("--save-preds", action="store_true")
+    parser.add_argument("--fuse", action="store_true", help="average logits of exactly two --ckpt")
+    parser.add_argument("--fuse-weight", type=float, default=0.5, help="weight on the first --ckpt")
     parser.add_argument("--export-sid-reals", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -233,8 +273,23 @@ def main() -> None:
     formula_by: dict[str, dict] = {}
     errors_by: dict[str, dict] = {}
 
+    # 2026-08-31, tianqi, --fuse: one combined model from two ckpts (logit mean)
+    fuse_pack = None
+    if args.fuse:
+        if len(named) != 2:
+            raise SystemExit("--fuse needs exactly two --ckpt name=/path")
+        (n0, p0), (n1, p1) = named
+        pa = ProbePredictor(p0, batch=args.batch)
+        pb = ProbePredictor(p1, batch=args.batch)
+        pb.model.to(pa.device)
+        fuse_name = f"fuse_{n0}_{n1}"
+        named = [(fuse_name, p0)]
+        fuse_pack = (pa, pb, float(args.fuse_weight))
+        print(f"fuse {n0}*{args.fuse_weight} + {n1}*{1.0 - args.fuse_weight}", flush=True)
+    # end
+
     for exp_name, ckpt in named:
-        predictor = ProbePredictor(ckpt, batch=args.batch)
+        predictor = fuse_pack[0] if fuse_pack is not None else ProbePredictor(ckpt, batch=args.batch)
         model_rows: list[dict] = []
         for cond in conditions:
             print(f"  {exp_name} {cond} ...", flush=True)
@@ -247,6 +302,7 @@ def main() -> None:
                 sid_reals_otf=sid_otf,
                 max_reals=args.max_reals,
                 seed=args.seed,
+                fuse=fuse_pack,
             )
             metrics, errors = score_paired(preds, threshold=args.threshold, max_errors=args.max_errors)
             metrics["split"] = name
