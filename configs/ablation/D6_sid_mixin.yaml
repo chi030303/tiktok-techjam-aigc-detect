@@ -1,0 +1,10 @@
+# 2026-08-31, tianqi, D6 = D5 ∪ A2 i2i fakes; jsonl from scripts/build_d6_mixin.py
+name: D6_sid_mixin
+seed: 20260831
+notes: >
+  D5 SID mix plus whole-image i2i reconstructions (Codex + nano, ~118
+  label=1). Paired reals stay out. Filename dedup. No Hunyuan. Train is
+  full SID parquet with this mix-in replacing equal SID FLUX fakes.
+  Unseen = EvalGEN Nova + official DALL·E. Compare to D5: official 400,
+  EvalGEN clean, i2i pair_acc.
+# end

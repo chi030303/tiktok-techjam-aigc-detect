@@ -264,6 +264,80 @@ def test_gallery_script_smoke(tmp_path):
     assert "thumbnails 3/3" in html_text
 
 
+# 2026-08-31, tianqi, cover paged folder galleries so full FP/FN does not freeze browsers
+def test_gallery_folder_layout_pages(tmp_path):
+    """Full galleries write thumbs as files; HTML only renders one page via JS."""
+    root = tmp_path / "val"
+    (root / "real").mkdir(parents=True)
+    (root / "fake").mkdir(parents=True)
+    preds = []
+    for i in range(5):
+        p = root / "real" / f"r{i}.png"
+        make_image(seed=i).save(p)
+        preds.append({"image_path": str(p), "pred": 0.9})
+    for i in range(4):
+        p = root / "fake" / f"f{i}.png"
+        make_image(seed=20 + i).save(p)
+        preds.append({"image_path": str(p), "pred": 0.1})
+    pred_json = tmp_path / "pred.json"
+    pred_json.write_text(json.dumps(preds), encoding="utf-8")
+    out = tmp_path / "gallery.html"
+    r = subprocess.run(
+        [sys.executable, "scripts/badcase_gallery.py", "--pred", str(pred_json),
+         "--image-dir", str(root), "--out", str(out), "--max-per-type", "10",
+         "--layout", "folder", "--page-size", "3", "--thumb", "64", "--title", "paged"],
+        capture_output=True, text=True, cwd=ROOT,
+    )
+    assert r.returncode == 0, r.stderr
+    folder = tmp_path / "gallery"
+    index = (folder / "index.html").read_text(encoding="utf-8")
+    assert "data:image/jpeg;base64" not in index
+    assert "thumbs/fp_0000.jpg" in index
+    assert (folder / "thumbs" / "fp_0000.jpg").is_file()
+    assert (folder / "thumbs" / "fn_0003.jpg").is_file()
+    assert index.count("thumbs/fp_") == 5
+    assert "pageSize = 3" in index
+    stub = out.read_text(encoding="utf-8")
+    assert "gallery/index.html" in stub
+    assert "as files, page_size=3" in r.stdout
+
+
+def test_gallery_from_html_splits_embed(tmp_path):
+    """--from-html pulls base64 out of a giant embed page into a paged folder."""
+    root = tmp_path / "val"
+    (root / "real").mkdir(parents=True)
+    (root / "fake").mkdir(parents=True)
+    preds = [
+        {"image_path": str(root / "real" / "a.png"), "pred": 0.9},
+        {"image_path": str(root / "fake" / "c.png"), "pred": 0.2},
+    ]
+    make_image(seed=1).save(root / "real" / "a.png")
+    make_image(seed=2).save(root / "fake" / "c.png")
+    pred_json = tmp_path / "pred.json"
+    pred_json.write_text(json.dumps(preds), encoding="utf-8")
+    embed = tmp_path / "giant.html"
+    r = subprocess.run(
+        [sys.executable, "scripts/badcase_gallery.py", "--pred", str(pred_json),
+         "--image-dir", str(root), "--out", str(embed), "--layout", "embed",
+         "--thumb", "64", "--title", "giant"],
+        capture_output=True, text=True, cwd=ROOT,
+    )
+    assert r.returncode == 0, r.stderr
+    dest = tmp_path / "split"
+    r2 = subprocess.run(
+        [sys.executable, "scripts/badcase_gallery.py", "--from-html", str(embed),
+         "--out", str(dest), "--page-size", "2"],
+        capture_output=True, text=True, cwd=ROOT,
+    )
+    assert r2.returncode == 0, r2.stderr
+    index = (dest / "index.html").read_text(encoding="utf-8")
+    assert "thumbs/fp_0000.jpg" in index
+    assert (dest / "thumbs" / "fp_0000.jpg").stat().st_size > 0
+    # source HTML kept when --out is a different folder
+    assert "data:image/jpeg;base64" in embed.read_text(encoding="utf-8")
+# end
+
+
 def test_gallery_missing_thumbs_surfaced(tmp_path):
     """Files gone (cleaned materialized tree) must not fail silently (PR#9 review M2)."""
     root = tmp_path / "val"

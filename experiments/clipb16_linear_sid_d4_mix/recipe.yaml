@@ -1,0 +1,43 @@
+# 2026-08-31, tianqi, D4: SID + nano + PixArt (DiT) + SDXL + GPT; no Hunyuan
+name: clipb16_linear_sid_d4_mix
+description: DATA_ABLATION_PLAN D4. Full SID, drop equal FLUX, mix nano_banana + PixArt + SDXL + GPT. PixArt stands in for latent+DiT. No Hunyuan. Frozen CLIP-B + online aug. Unseen = EvalGEN Nova.
+owner: kiki
+
+backbone: clip-vit-base-patch16
+head: linear
+freeze_backbone: true
+input_mode: rgb
+
+train:
+  datasets:
+    - sid_set
+  mixin_manifest: data/manifests/ablation/D4_sid_mixin.jsonl
+  replace_sid_fakes: true
+  forbid:
+    - val
+    - evalgen
+    - demo_wildfake
+
+eval:
+  - official_val
+  - evalgen
+
+aug:
+  online: true
+  jpeg: true
+  blur: true
+  resize: true
+  noise: true
+  jitter: true
+  center_crop: true
+
+optim:
+  epochs: 3
+  batch_size: 64
+  lr: 0.001
+  num_workers: 4
+  cache_features: false
+  seed: 20260831
+
+gpu: "1"
+# end

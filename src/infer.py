@@ -107,4 +107,43 @@ class ProbePredictor:
             for path, p in zip(paths_b, prob.tolist()):
                 out.append({"image_path": path, "pred": float(p)})
         return out
+
+
+# 2026-08-31, tianqi, contest fuse = mean logit then sigmoid (same as run_full_eval --fuse)
+def fuse_predict_dir(
+    ckpt_a: Path,
+    ckpt_b: Path,
+    image_dir: Path,
+    weight: float = 0.5,
+    batch: int = 32,
+) -> list[dict]:
+    pa = ProbePredictor(ckpt_a, batch=batch)
+    pb = ProbePredictor(ckpt_b, batch=batch)
+    pb.model.to(pa.device)
+    paths = sorted(
+        p
+        for p in image_dir.rglob("*")
+        if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
+    )
+    if not paths:
+        return []
+    rows = [(p, 0) for p in paths]
+    loader = DataLoader(
+        ImagePathDataset(rows, _tfm(pa.image_size), input_mode=pa.input_mode),
+        batch_size=batch,
+        shuffle=False,
+        num_workers=4,
+        pin_memory=pa.device.type == "cuda",
+    )
+    amp = pa.device.type == "cuda"
+    out: list[dict] = []
+    w = float(weight)
+    for x, _y, paths_b in loader:
+        x = x.to(pa.device, non_blocking=True)
+        with torch.amp.autocast("cuda", enabled=amp):
+            logit = w * pa.model(x) + (1.0 - w) * pb.model(x)
+        prob = logit.float().sigmoid().cpu()
+        for path, p in zip(paths_b, prob.tolist()):
+            out.append({"image_path": path, "pred": float(p)})
+    return out
 # end

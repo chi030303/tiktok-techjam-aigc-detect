@@ -68,6 +68,29 @@ def subsample_fakes_per_generator(
     return out
 
 
+# 2026-08-31, tianqi, EvalGEN robust can score Nova only; other gens already in r400 table
+def filter_fakes_by_generators(
+    rows: list[tuple[Path, int]],
+    root: Path,
+    generators: set[str],
+) -> list[tuple[Path, int]]:
+    allowed = {g.lower() for g in generators}
+    unknown = allowed - EVALGEN_FAKE
+    if unknown:
+        raise SystemExit(
+            f"unknown evalgen generators {sorted(unknown)}; choose from {sorted(EVALGEN_FAKE)}"
+        )
+    out: list[tuple[Path, int]] = []
+    for path, y in rows:
+        if int(y) == 0:
+            out.append((path, y))
+            continue
+        if generator_from_path(path, root) in allowed:
+            out.append((path, y))
+    return out
+# end
+
+
 def load_coco_reals() -> list[tuple[Path, int]]:
     root, rows = load_split("official_val")
     return [(p, 0) for p, y in rows if int(y) == 0]

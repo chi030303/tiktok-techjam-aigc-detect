@@ -8,6 +8,7 @@ import pytest
 from PIL import Image
 
 from src.eval.evalgen_pool import (
+    filter_fakes_by_generators,
     generator_from_path,
     pair_evalgen,
     subsample_fakes_per_generator,
@@ -96,6 +97,13 @@ def test_pair_evalgen_and_per_gen_subsample(tmp_path: Path):
     paired = pair_evalgen(picked, real_rows)
     assert sum(y == 0 for _p, y in paired) == 3
     assert sum(y == 1 for _p, y in paired) == 4
+    # 2026-08-31, tianqi, Nova-only robust must drop other EvalGEN folders
+    nova_only = filter_fakes_by_generators(fakes, root, {"nova"})
+    assert nova_only == []
+    flux_only = filter_fakes_by_generators(fakes, root, {"flux"})
+    assert len(flux_only) == 4
+    assert all(generator_from_path(p, root) == "flux" for p, _y in flux_only)
+    # end
 
 
 def test_jpeg_condition_differs_from_clean(tmp_path: Path):

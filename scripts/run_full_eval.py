@@ -30,6 +30,7 @@ import random
 
 from src.eval.evalgen_pool import (
     export_sid_val_reals,
+    filter_fakes_by_generators,
     generator_from_path,
     load_reals,
     pair_evalgen,
@@ -121,6 +122,11 @@ def _load_evalgen(args) -> tuple[str, Path, Path | None, list, str]:
     else:
         fake_root, fake_rows = load_split("evalgen")
     fake_rows = [(p, 1) for p, y in fake_rows if int(y) == 1]
+    # 2026-08-31, tianqi, --generators nova skips Flux/GoT/Infinity/OmniGen for robust
+    if args.generators:
+        gens = {x.strip().lower() for x in args.generators.split(",") if x.strip()}
+        fake_rows = filter_fakes_by_generators(fake_rows, fake_root, gens)
+    # end
     if args.max_fakes_per_gen is not None:
         fake_rows = subsample_fakes_per_generator(fake_rows, fake_root, args.max_fakes_per_gen, args.seed)
 
@@ -211,6 +217,13 @@ def main() -> None:
     parser.add_argument("--reals-dir", type=Path, default=None)
     parser.add_argument("--max-images", type=int, default=None, help="balanced subsample (official_val)")
     parser.add_argument("--max-fakes-per-gen", type=int, default=None)
+    # 2026-08-31, tianqi, --generators nova skips Flux/GoT/Infinity/OmniGen for robust
+    parser.add_argument(
+        "--generators",
+        default=None,
+        help="evalgen only: comma names from flux,got,infinity,omnigen,nova",
+    )
+    # end
     parser.add_argument("--max-reals", type=int, default=None)
     parser.add_argument("--max-errors", type=int, default=80)
     parser.add_argument("--seed", type=int, default=0)

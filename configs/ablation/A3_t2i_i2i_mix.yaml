@@ -1,20 +1,8 @@
-# A3: t2i + i2i mix (requires whole-image i2i manifest when ready)
+# 2026-08-31, tianqi, A3 at available scale: D2 t2i + 120 i2i, not 4k+4k
 name: A3_t2i_i2i_mix
-seed: 20260830
-
-real:
-  manifest: data/manifests/source_sid_train.jsonl
-  n: 8000
-  label: 0
-
-pools:
-  - manifest: data/manifests/source_sid_train.jsonl
-    n: 4000
-    label: 1
-    generation_type: [t2i]
-    family: [diffusion]
-  - manifest: data/manifests/source_i2i_train.jsonl
-    n: 4000
-    label: 1
-    generation_type: [i2i]
-    family: [diffusion]
+seed: 20260831
+notes: >
+  Plan wanted 4k t2i + 4k i2i. Only 60 triplets exist, so A3 = D2 jsonl
+  (8k SID reals + ~6k self-built t2i) plus A2 i2i fakes (label=1).
+  Built by scripts/build_a3_mix.py -> manifests/ablation/A3_t2i_i2i_mix.jsonl.
+# end

@@ -287,6 +287,8 @@ class SourceRecord(_Record):
     content_type: str | None = None  # real | full_synthetic | partial_manipulation
     original_format: str | None = None  # jpg | png | webp | … (suffix, jpeg→jpg)
     phash: str | None = None  # 16-hex DCT pHash; None if not computed
+    # 2026-08-31, tianqi, bind i2i triplets (real + reconstructions of the same scene)
+    source_id: str | None = None
     # end
 
     def validate(self) -> None:

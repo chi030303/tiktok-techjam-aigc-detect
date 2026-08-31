@@ -1,0 +1,8 @@
+# 2026-08-31, tianqi, A1 t2i-only = D2 8k-probe for the A-axis table
+name: A1_t2i_only
+seed: 20260831
+notes: >
+  Same 8k SID reals as D1 + self-built t2i fakes (flux2/sd35/nano/GPT). No i2i.
+  Manifest is D2_selfbuilt.jsonl. Compare to A2 (60-triplet i2i-only) and A3
+  (D2 + 120 i2i fakes). Not 8k i2i; only 60 triplets exist.
+# end
