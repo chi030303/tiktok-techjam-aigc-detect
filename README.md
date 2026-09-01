@@ -304,6 +304,10 @@ Tables land in `outputs/tables/` (csv / md / json). Full transform list and hold
 
 Repo is **public**. Self-built mix-in (not SID / official val): [docs/dataset_release.md](docs/dataset_release.md) · [Kaggle aigctrace-mix](https://www.kaggle.com/datasets/wwjjames/aigctrace-mix).
 
+## License
+
+Code and docs in this repository are **MIT** ([LICENSE](LICENSE)). SID_Set, CLIP, WildFake, and [AIGCTrace-Mix](https://www.kaggle.com/datasets/wwjjames/aigctrace-mix) keep their own licenses; we do not relicense those assets.
+
 ## Team workflow
 
 - **Daily handbook** (SSH, tmux, venv, GPUs): [docs/dev.md](docs/dev.md)
