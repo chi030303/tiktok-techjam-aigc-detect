@@ -19,5 +19,5 @@ Deadline: **1 Sep 2026 12:00 GMT+8**. Score = **0.50×AUC_clean + 0.50×AUC_robu
 
 Self-built data release (not a contest field; **do not publish tonight**): [dataset_release.md](dataset_release.md).
 
-Submit model: **CLIP-B/16 last-4** (single ckpt, formula **0.990**) or **mean-logit fuse last4 + D3** (**0.993**) if two checkpoints are allowed.
+Submit model: **CLIP-B/16 last-4** (single ckpt, formula **0.990**) or **mean-logit fuse last4 + D3** (**0.993**) if two checkpoints are allowed. D4/D5/D6 mix tables: [robustness.md](robustness.md).
 # end

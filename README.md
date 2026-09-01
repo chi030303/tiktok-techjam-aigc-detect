@@ -101,22 +101,38 @@ Tables land in `outputs/tables/` (csv / md / json). Full transform list and hold
 
 <!-- 2026-08-31, tianqi, contest ranking last4 0.990 / fuse 0.993 -->
 **Single ckpt: CLIP-B/16 last-4** — SID ~140k + official online aug, unfreeze last 4 vision blocks. Official val 400 formula **0.990** (full 13,843 **0.989**).  
-<!-- 2026-08-31, tianqi, fuse D5 matches D3 fuse on official; D5 alone does not -->
-**Two ckpts:** mean-logit fuse of last-4 + D3 mix = **0.993**. Fuse last-4 + **D5** (D3∪D4 mix) is also **0.993** — D5 alone is only 0.975, so the story is complementary heads, not “more mix-in always wins.”
+<!-- 2026-09-01, tianqi, D6 finished: fuse last4+D6 0.9929 does not beat D3 fuse -->
+**Two ckpts:** mean-logit fuse of last-4 + **D3** mix = **0.9930**. last4+D5 = 0.9927, last4+D6 = 0.9929 — complementary heads, not “more mix-in always wins.”
 # end
 
 | model | formula 400 | DALL·E AUC | Acc@0.5 | EvalGEN AUROC |
 |---|---:|---:|---:|---:|
-| fuse last4+D3 | **0.993** | 0.995 | 0.888 | **0.997** |
-| fuse last4+D5 | **0.993** | 0.995 | — | — |
+| **fuse last4+D3** | **0.9930** | 0.995 | 0.888 | **0.997** |
+| fuse last4+D6 | 0.9929 | 0.995 | — | — |
+| fuse last4+D5 | 0.9927 | 0.995 | — | — |
+| fuse last4+D4 | 0.990 | — | — | — |
 | CLIP-B last-4 | **0.990** | 0.991 | 0.848 | 0.989 |
 | D3 dualbranch | 0.983 | 0.988 | 0.948 | 0.995 |
 | D3 mix (frozen CLIP-B) | 0.978 | 0.985 | 0.940 | 0.995 |
+| D6 mix | 0.977 | 0.984 | — | 0.994 |
+| D5 mix | 0.975 | 0.982 | — | 0.995 |
+| D4 mix | 0.973 | — | — | 0.989 |
 | CLIP-L SID-aug | 0.976 | 0.976 | 0.885 | 0.995 |
 | CLIP-B SID-aug | 0.970 | 0.969 | 0.900 | 0.992 |
 | SID DINOv2 frozen | 0.900 | 0.904 | — | 0.964 |
 
-15-condition table and Nova split: [docs/robustness.md](docs/robustness.md). Full grid: [outputs/tables/compare_spec/README.md](outputs/tables/compare_spec/README.md). Errors: [docs/error_analysis.md](docs/error_analysis.md).
+<!-- 2026-09-01, tianqi, D3–D6 mix-in contents for README -->
+**Mix-in contents** (replace equal SID FLUX; Hunyuan never used):
+
+| Mix | What was added | Why it exists | Contest takeaway |
+|---|---|---|---|
+| D3 | WildFake UNet ~4k + flux2/sd35 + ADM/DDPM 1k each (~9.6k) | architecture holes (UNet / pixel), not more FLUX | **submit mix head** — lifts Nova 0.963 → 0.988 |
+| D4 | nano + PixArt + SDXL + GPT (~6k) | extra T2I families | official **0.973**, Nova still **0.963** — do not submit |
+| D5 | D3 ∪ D4 (~15k) | union probe | 0.975 ≈ D3, not a jump |
+| D6 | D5 + 118 whole-image i2i fakes | pair ranking | pair_acc 0.79 → **0.805**; official 0.977, fuse 0.9929 |
+# end
+
+15-condition table, Nova split, and the full D3–D6 table: [docs/robustness.md](docs/robustness.md). Full grid: [outputs/tables/compare_spec/README.md](outputs/tables/compare_spec/README.md). Errors: [docs/error_analysis.md](docs/error_analysis.md).
 # end
 
 ## Reproduce
@@ -153,7 +169,7 @@ Frozen SID DINOv2 (ablation ~0.90) remains in release `v0.1-model` if you need t
 
 - **0.5 is not calibrated.** Last-4 / fuse are miss-heavy at 0.5 (1 FP / 44–60 FN on 400). Use `pred` as a score; pick the FPR you can afford ([docs/error_analysis.md](docs/error_analysis.md)).
 - **Nova / Infinity** stay hard on recall at 0.5 even when AUROC is high. Official val is DALL·E-only.
-- **D4/D5 mix-ins** did not beat D3 on official DALL·E; do not submit those heads.
+- **D4/D5/D6 mix-ins** did not beat D3 on official DALL·E (0.973 / 0.975 / 0.977 vs D3 0.978). Fuse last4+D6 is 0.9929 vs last4+D3 **0.9930**. Do not submit those heads.
 - **Image-only**, English docs. Very small thumbnails are under-tested (eval is ~1024²-heavy).
 - Training last-4 **on** D3 dropped official score vs last-4 alone — complementary fuse beats stacking.
 
@@ -162,7 +178,7 @@ Frozen SID DINOv2 (ablation ~0.90) remains in release `v0.1-model` if you need t
 <!-- 2026-08-31, tianqi, names/roles from kiki for Devpost -->
 | Member | Focus |
 |---|---|
-| kiki (`chi030303`) | Training/eval pipeline, CLIP-B last-4 submit, D3/D4/D5 mix-ins, last4+mix fuse, EvalGEN (incl. Nova), contest write-ups |
+| kiki (`chi030303`) | Training/eval pipeline, CLIP-B last-4 submit, D3–D6 mix-ins, last4+mix fuse, EvalGEN (incl. Nova), contest write-ups |
 | yun | Model ablations (backbone, last-4 vs first-4, CLIP-L, 336, dual-branch, consistency) |
 | samily | Error / bad-case **analysis** (`analyze_badcase_galleries.py`, content-pattern slices); data-ablation design (A/D axes) |
 | zhengcongyun | Bad-case **collection** pipeline; official robustness transforms |

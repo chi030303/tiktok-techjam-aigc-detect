@@ -22,10 +22,12 @@ Pace ≈ 125–130 wpm. Total ≈ 510 words.
 
 ## Slide 2 — Mixed data (0:25–1:10)
 
-**On screen:** SID banner (~140k, ~90%) and per-generator mix-in counts.
+# 2026-09-01, tianqi, distinguish SID last-4 vs mixed head vs generated-not-submit
+**On screen:** SID banner (last-4 = SID only); teal cards = mixed head; gray cards = generated but not in submit.
 
 **Say:**
-> Most of the training set is still SID_Set: about one hundred and forty thousand images, ninety percent of train — seventy thousand real photos and seventy thousand FLUX fakes. We do not stack more FLUX. We replace an equal number of SID FLUX with a thin mix-in of other generators: WildFake original SD three thousand nine hundred; SDXL fifteen hundred; PixArt, Stable Diffusion 3.5, Flux.2, nano banana, and GPT-image at fifteen hundred each; ADM and DDPM at one thousand each. These fakes are self-built from local checkpoints and ComfyUI, and we will open-source the mix. No GAN in train: the contest and EvalGEN are diffusion, flow, and autoregressive. Hunyuan is not used.
+> Most of the training set is still SID_Set: about one hundred and forty thousand images — seventy thousand real photos and seventy thousand FLUX fakes. The one-checkpoint detector trains on SID only. We also generated other families from local checkpoints and ComfyUI, and we will open-source that mix. If two checkpoints are allowed, we fuse last-four with a mixed head trained on WildFake original SD, Flux.2, Stable Diffusion 3.5, ADM, and DDPM — replacing an equal number of SID FLUX, not stacking. We further generated PixArt, SDXL, GPT-image, and nano banana. Those extra T2I sets did not lift the contest score, so they are not in the submitted checkpoint. No GAN in train: the contest and EvalGEN are diffusion, flow, and autoregressive.
+# end
 
 ## Slide 3 — Fuse architecture (1:10–1:55)
 
@@ -51,10 +53,12 @@ python predict.py data/val/fake out.json \
 
 ## Slide 5 — Bad-case gallery (2:45–3:25)
 
+# 2026-09-01, tianqi, low FPR; FN cluster is comics/illustration, not all photoreal
 **On screen:** FN Badcases (left) and FP Badcases (right).
 
 **Say:**
-> We ship an HTML gallery: false positives versus false negatives, sorted by worst prediction. On the full official val, frozen SID has one hundred fifty false positives and one thousand eight hundred sixty-five false negatives. Many misses are non-photoreal DALL·E — anime and illustration — scored near zero-point-zero-zero-one. False positives are real COCO photos scored above zero-point-nine-eight. At threshold zero-point-five, fuse on the four-hundred screen is one false positive and forty-four false negatives: low false-accusation, still conservative. A high AUC does not mean zero-point-five is the right operating point.
+> We ship an HTML gallery: false positives versus false negatives, sorted by worst prediction. At threshold zero-point-five, fuse on the four-hundred screen is one false positive and forty-four false negatives — we almost never accuse a real photo. Many misses are non-photoreal DALL·E: comics, anime, illustration, scored near zero-point-zero-zero-one. That style is outside our social-photo target, so on a photoreal social feed we expect fewer misses at the same threshold. Some remaining misses are still photoreal DALL·E, so this is not a free lunch. A high AUC does not mean zero-point-five is the right operating point.
+# end
 
 ## Slide 6 — 15 official conditions (3:25–4:00)
 

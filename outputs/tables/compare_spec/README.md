@@ -1,5 +1,5 @@
-# 2026-08-31, tianqi, spec-compare after D3 dualbranch + fuse 400
-# Spec-compare eval (as of 2026-08-31)
+# 2026-09-01, tianqi, spec-compare after D4/D5/D6 mix + fuse
+# Spec-compare eval (as of 2026-09-01)
 
 Headline: **0.50×AUC_clean + 0.50×AUC_robust**. Acc@0.5 is not the score.
 400 = balanced official-val screen (200/200). Train size is still ~140k unless noted.
@@ -21,6 +21,9 @@ CLIP-L SID-aug **0.995 is EvalGEN clean AUROC**, not official formula. Official 
 7. D3 dualbranch (same mix, frozen CLIP-B RGB + highpass CNN): **0.983** official 400, EvalGEN 0.995. Beats frozen D3, still loses to last4 and fuse.
 8. Fuse last4 + D3: **0.993** official 400, EvalGEN 0.997. Best dual-metric if two ckpts are allowed.
 9. D3 + last4 **trained together**: official 400 **0.976** (drop vs last4). EvalGEN 400/gen×15 formula **0.9955** is the best unseen-robust screen so far — still do not submit it; contest score is DALL·E.
+10. D4 (nano / PixArt / SDXL / GPT, 6014): official **0.973**, EvalGEN 0.989, Nova AUC **0.963** (same as last-4). Extra T2I does not lift Nova. Fuse last4+D4 = **0.990** (no gain).
+11. D5 = D3 ∪ D4 (~15k): official **0.975**, EvalGEN 0.995, Nova 0.986. ≈ D3, not a jump. Fuse last4+D5 = **0.9927**.
+12. D6 = D5 + 118 i2i fakes: official **0.977**, pair_acc **0.805** (D5 was 0.79). Fuse last4+D6 = **0.9929**. Do not submit D4/D5/D6 heads.
 
 
 ## Ranking (400 formula unless n=13843)
@@ -29,15 +32,21 @@ CLIP-L SID-aug **0.995 is EvalGEN clean AUROC**, not official formula. Official 
 
 | Model | Train | Formula | DALL·E AUC | Acc@0.5 |
 |---|---|---:|---:|---:|
-| fuse last4+D3 | mean logit, no retrain | **0.993** | 0.995 | 0.888 |
+| fuse last4+D3 | mean logit, no retrain | **0.9930** | 0.995 | 0.888 |
+| fuse last4+D6 | mean logit | 0.9929 | 0.995 | — |
+| fuse last4+D5 | mean logit | 0.9927 | 0.995 | — |
 | CLIP-B unfreeze4 | SID 14万, last 4 of 12 | **0.990** | 0.991 | 0.848 |
+| fuse last4+D4 | mean logit | 0.990 | — | — |
 | D3 dualbranch | D3 mix + RGB + highpass CNN | **0.983** | 0.988 | **0.948** |
 | CLIP-L unfreeze4 | SID 14万, last 4 of 24 | 0.980 | 0.981 | 0.883 |
 | D3 mix | frozen CLIP-B, SID + 9622 mix-in | **0.978** | 0.985 | **0.940** |
+| D6 mix | D5 + 118 i2i fakes | 0.977 | 0.984 | — |
 | CLIP-B unfreeze4@336 | CLIP-B last-4 @ 336 | 0.977 | 0.981 | 0.823 |
 | D3 + last4 train | D3 mix + unfreeze last 4 | 0.976 | 0.984 | — |
 | CLIP-L SID-aug | frozen CLIP-L | 0.976 | 0.976 | 0.885 |
+| D5 mix | D3 ∪ D4 | 0.975 | 0.982 | — |
 | CLIP-B first-4 unfreeze | encoder blocks 0–3 | 0.974 | 0.974 | — |
+| D4 mix | nano + PixArt + SDXL + GPT | 0.973 | — | — |
 | CLIP-B SID-aug | frozen CLIP-B | 0.970 | 0.969 | 0.900 |
 | DINOv2 CIFAKE | CIFAKE | 0.786 | 0.779 | 0.623 |
 | D1 8k | 8k FLUX, no aug | 0.734 full | 0.737 | 0.676 |

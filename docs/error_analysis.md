@@ -35,10 +35,14 @@ Full official val for frozen SID-aug (not the submit) is still FN-heavy: CLIP-B 
 
 ## 3. Representative false negatives
 
-Misses are **DALL·E Advanced** images that look photographic after social-style framing. Last-4 misses 60/200 at 0.5; fuse still misses 44/200. These are not “threshold noise”: many FN have very low `pred` (the model is sure they are real).
+<!-- 2026-09-01, tianqi, FN cluster is non-photoreal; residual photoreal DALL·E still exists -->
+Last-4 misses 60/200 fakes at 0.5; fuse still misses 44/200. **FPR is the small number** (1/200 reals). Looking at the gallery, a large FN cluster is **non-photoreal DALL·E** (comics / anime / illustration / painterly), often with `pred ≈ 0.001`. Train is SID social photos + FLUX, so those styles are off-target for a social-feed detector. On photoreal social AIGC we expect fewer misses at the same threshold.
+
+This does **not** mean FNR goes to zero in the wild: some FN are still photoreal DALL·E with very low `pred` (the model is sure they are real). Those remain a ranking problem, not a style mismatch.
 
 - Gallery FN section, sorted by **lowest** `pred` first.
 - JPEG-30 and resize ×0.25 are the weakest **AUC** keys for fuse (~0.984), still far above CIFAKE (~0.56). Hard JPEG can erase generator traces last-4 uses.
+<!-- end -->
 
 ## 4. Unseen generators (EvalGEN)
 
@@ -57,12 +61,14 @@ Never trained on EvalGEN. **Nova** is the shared blind spot; Flux/GoT/OmniGen AU
 - CIFAKE-only heads (official ~0.50–0.79)
 - Pixel/FFT-only probes (C-Pixel ~0.65, never fires on DALL·E)
 - First-4 unfreeze (0.974) and CLIP-L last-4 (0.980)
-- D4/D5 frozen mix-ins as submit (D4 official **0.973**, D5 **0.975** — both below D3)
+# 2026-09-01, tianqi, D6 also below D3; fuse last4+D6 does not beat D3 fuse
+- D4/D5/D6 frozen mix-ins as submit (official **0.973 / 0.975 / 0.977** — all below D3 **0.978**; fuse last4+D6 **0.9929** vs last4+D3 **0.9930**)
+# end
 
 ## 6. If we had more time
 
 1. Calibrate last-4 so 0.5 matches a stated FPR without changing AUROC.  
-2. More whole-image **i2i** (only 59 triplets so far) — paired ranking, not Acc@0.5.  
+2. More whole-image **i2i** (only 59 triplets; D6’s 118 fakes moved pair_acc 0.79 → 0.805, not the contest score) — paired ranking, not Acc@0.5.  
 3. Nova-family t2i that is **not** EvalGEN (license-clean stand-in).  
 4. Keep fuse if two files are allowed; do not train last-4 on D3 again.
 

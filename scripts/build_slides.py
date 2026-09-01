@@ -102,8 +102,10 @@ def fig_data_path() -> Path:
         (0.2, "CIFAKE", "32×32 SD1.4\nairplane photos", "official 0.57", "#FEE2E2", ACCENT),
         (2.7, "SID 140k", "social FLUX-heavy\n+ online aug", "official 0.970", "#DBEAFE", BLUE),
         (5.2, "D3 mix", "UNet + ADM/DDPM\n+ flux2/sd35", "0.978 · Nova 0.988", "#CCFBF1", TEAL),
-        (7.7, "D5 = D3+D4", "+ PixArt / SDXL\n+ GPT / nano", "0.975 · Nova 0.986", "#FEF3C7", AMBER),
-        (10.2, "D6", "+ 118 i2i fakes\nCodex + nano", "running / pair_acc", "#EDE9FE", "#6D28D9"),
+        (7.7, "D5 = D3+D4", "+ PixArt / SDXL\n+ GPT / nano", "0.975 · Nova 0.984", "#FEF3C7", AMBER),
+        # 2026-09-01, tianqi, D6 finished: official 0.977, pair_acc 0.805, not a submit
+        (10.2, "D6", "+ 118 i2i fakes\nCodex + nano", "0.977 · pair 0.81", "#EDE9FE", "#6D28D9"),
+        # end
     ]
     for x, title, body, score, fc, ec in steps:
         _round(ax, (x, 0.55), 2.05, 2.55, fc, ec, 1.8, 0.12)
@@ -168,7 +170,7 @@ def fig_decisions() -> Path:
     ax.axis("off")
     cards = [
         (0.25, "Why not GAN as train", "Contest val = DALL·E.\nEvalGEN = flow / AR / DiT.\nB-axis skipped: leave GAN\nas unseen, not a 10/20% mix.\nPixel hole filled by ADM/DDPM\n(not StyleGAN)."),
-        (4.3, "i2i is triplets, not 8k", "59 complete scenes:\nreal + nano + Codex.\nA2 i2i-only official 0.443,\npair_acc 0.42 (overfit).\nD3 never saw them, pair 0.79.\nD6 = D5 + 118 fakes only."),
+        (4.3, "i2i is triplets, not 8k", "59 complete scenes:\nreal + nano + Codex.\nA2 i2i-only official 0.443,\npair_acc 0.42 (overfit).\nD6 = D5 + 118 fakes:\nofficial 0.977, pair 0.805."),
         (8.35, "No SID tampered as i2i", "SID label=2 is local edit.\nContest is image-level AIGC.\nDo not treat tampered as\nwhole-image i2i. Do not mine\nDALL·E / EvalGEN into train."),
     ]
     for x, title, body in cards:
@@ -179,6 +181,49 @@ def fig_decisions() -> Path:
     fig.savefig(dest)
     plt.close()
     return dest
+
+
+# 2026-09-01, tianqi, A-grid + D6 i2i numbers for team slides
+def fig_i2i_table() -> Path:
+    fig, ax = plt.subplots(figsize=(12.4, 3.6))
+    ax.axis("off")
+    cols = ["Ablation", "Train", "Official 400", "EvalGEN clean", "i2i pair_acc", "Takeaway"]
+    rows = [
+        ["A1 t2i-only", "t2i, no SID", "0.595", "0.760", "0.653", "no social domain"],
+        ["A2 59-triplet i2i", "118 fakes only", "0.443", "0.810", "0.424", "overfits 59 scenes"],
+        ["A3 t2i + 118 i2i", "still no SID", "0.786", "0.786", "0.593", "i2i cannot replace SID"],
+        ["D6 = D5 + 118 i2i", "SID mix + 118 fakes", "0.977", "0.994", "0.805", "pair up; contest unchanged"],
+    ]
+    table = ax.table(
+        cellText=rows,
+        colLabels=cols,
+        loc="center",
+        cellLoc="center",
+        colColours=["#F1F5F9"] * 6,
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1.18, 1.55)
+    for (r, c), cell in table.get_celld().items():
+        cell.set_edgecolor("#E2E8F0")
+        if r == 0:
+            cell.set_text_props(weight="bold", color=INK)
+        if r == 2:
+            cell.set_facecolor("#FEE2E2")
+        if r == 4:
+            cell.set_facecolor("#EDE9FE")
+    ax.set_title(
+        "i2i pair_acc = P(recon_score > paired real) on 118 pairs  ·  A-grid has no SID  ·  D6 keeps SID",
+        loc="left",
+        fontsize=12,
+        color=MUTED,
+        pad=8,
+    )
+    dest = FIG / "i2i_table.png"
+    fig.savefig(dest)
+    plt.close()
+    return dest
+# end
 
 
 def fig_transforms() -> Path:
@@ -271,11 +316,64 @@ def fig_last4_fuse() -> Path:
     _txt(ax, 11.22, 2.17, "mean → σ\n0.993", 11, ACCENT, weight="bold")
     ax.annotate("", xy=(10.3, 2.55), xytext=(10.05, 2.75), arrowprops=dict(arrowstyle="-|>", color=MUTED, lw=1.3))
     ax.annotate("", xy=(10.3, 1.8), xytext=(10.05, 1.55), arrowprops=dict(arrowstyle="-|>", color=MUTED, lw=1.3))
-    _txt(ax, 6.2, 0.45, "Do not train last-4 on D3  → official drops to 0.976.  Complementary heads, not one bigger net.", 11, MUTED)
+    # 2026-09-01, tianqi, D5/D6 fuse did not beat D3 fuse
+    _txt(
+        ax,
+        6.2,
+        0.45,
+        "Do not train last-4 on the mix → 0.976.  D5/D6 fuse 0.9927 / 0.9929 do not beat D3 fuse 0.993.",
+        11,
+        MUTED,
+    )
+    # end
     dest = FIG / "last4_fuse.png"
     fig.savefig(dest)
     plt.close()
     return dest
+
+
+# 2026-09-01, tianqi, why fuse beats stacking / extra mix-in
+def fig_fuse_why() -> Path:
+    fig, ax = plt.subplots(figsize=(12.4, 2.6))
+    ax.axis("off")
+    cols = ["", "last-4", "D3 mix", "fuse last4+D3", "train last-4 on mix"]
+    rows = [
+        ["Official 400 formula", "0.990", "0.978", "0.993", "0.976"],
+        ["Nova recall @0.5", "0.49", "0.86", "0.56", "—"],
+        ["Nova 15-cond formula", "—", "0.9865", "0.9880", "—"],
+        ["400 @0.5  FP / FN", "1 / 60", "4 / 20", "1 / 44", "—"],
+    ]
+    table = ax.table(
+        cellText=rows,
+        colLabels=cols,
+        loc="center",
+        cellLoc="center",
+        colColours=["#F1F5F9"] * 5,
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(11)
+    table.scale(1.18, 1.45)
+    for (r, c), cell in table.get_celld().items():
+        cell.set_edgecolor("#E2E8F0")
+        if r == 0:
+            cell.set_text_props(weight="bold", color=INK)
+        if c == 3 and r > 0:
+            cell.set_facecolor("#FEE2E2")
+            cell.set_text_props(weight="bold")
+        if c == 4 and r == 1:
+            cell.set_facecolor("#FEF3C7")
+    ax.set_title(
+        "Fuse at inference  ·  last-4 Nova 15-cond not rerun  ·  D5/D6 fuse 0.9927 / 0.9929 vs D3 0.993",
+        loc="left",
+        fontsize=11,
+        color=MUTED,
+        pad=6,
+    )
+    dest = FIG / "fuse_why.png"
+    fig.savefig(dest)
+    plt.close()
+    return dest
+# end
 
 
 def fig_fuse_arch() -> Path:
@@ -311,32 +409,57 @@ def fig_fuse_arch() -> Path:
 
 
 def fig_arch_table() -> Path:
-    # 2026-08-31, tianqi, demo mixed-data table with per-generator n; SID is the majority
+    # 2026-09-01, tianqi, demo mix: SID last-4 vs mixed-head families vs generated-not-submit
     fig, ax = plt.subplots(figsize=(12.4, 4.05))
     ax.set_xlim(0, 12.4)
     ax.set_ylim(0, 4.05)
     ax.axis("off")
-    _round(ax, (0.15, 3.15), 12.1, 0.78, "#CCFBF1", TEAL, 1.6, 0.1)
-    _txt(ax, 6.2, 3.68, "Main train  ·  SID_Set   ~140,000   (~90%)", 15, TEAL, weight="bold", ha="center")
-    _txt(ax, 6.2, 3.32, "≈70k real  +  ~70k FLUX fakes.  Mix-in below replaces equal SID FLUX (not stacked).", 11, INK, ha="center")
-    mix = [
+    _round(ax, (0.15, 3.28), 12.1, 0.68, "#CCFBF1", TEAL, 1.6, 0.1)
+    _txt(ax, 6.2, 3.74, "last-4 (1 ckpt)  ·  SID_Set  ~140,000", 14, TEAL, weight="bold", ha="center")
+    _txt(
+        ax,
+        6.2,
+        3.42,
+        "≈70k real + ~70k FLUX.  Mixed head replaces a thin slice of SID FLUX — not stacked, not every family below.",
+        10,
+        INK,
+        ha="center",
+    )
+    _txt(ax, 0.22, 3.08, "In the mixed head  (fuse 2nd ckpt)", 11, TEAL, ha="left", weight="bold")
+    in_head = [
         ("WildFake original SD", "3,931"),
-        ("SDXL", "1,514"),
-        ("PixArt-Sigma-0.6B", "1,500"),
-        ("SD3.5 Medium-2.5B", "1,500"),
         ("Flux.2", "1,500"),
-        ("nano banana (t2i)", "1,500"),
-        ("GPT-image", "1,500"),
+        ("SD3.5 Medium", "1,500"),
         ("ADM", "1,000"),
         ("DDPM", "1,000"),
     ]
-    xs = [0.15, 4.25, 8.35]
-    ys = [2.35, 1.45, 0.55]
-    for i, (name, n) in enumerate(mix):
-        x, y = xs[i % 3], ys[i // 3]
-        _round(ax, (x, y), 3.9, 0.78, "#F8FAFC", LINE, 0.9, 0.08)
-        _txt(ax, x + 0.22, y + 0.48, name, 11, MUTED, ha="left")
-        _txt(ax, x + 0.22, y + 0.14, n, 16, INK, ha="left", weight="bold")
+    for i, (name, n) in enumerate(in_head):
+        x = 0.15 + i * 2.42
+        _round(ax, (x, 2.18), 2.30, 0.78, "#CCFBF1", TEAL, 1.0, 0.08)
+        _txt(ax, x + 0.14, 2.72, name, 9, MUTED, ha="left")
+        _txt(ax, x + 0.14, 2.38, n, 14, INK, ha="left", weight="bold")
+    _txt(
+        ax,
+        0.22,
+        1.95,
+        "Also generated  ·  extra T2I did not lift contest score  ·  not in submit",
+        11,
+        AMBER,
+        ha="left",
+        weight="bold",
+    )
+    built = [
+        ("PixArt-Sigma", "1,500"),
+        ("SDXL", "1,514"),
+        ("GPT-image", "1,500"),
+        ("nano banana (t2i)", "1,500"),
+    ]
+    for i, (name, n) in enumerate(built):
+        x = 0.15 + i * 3.05
+        _round(ax, (x, 0.95), 2.90, 0.78, "#F8FAFC", LINE, 0.9, 0.08)
+        _txt(ax, x + 0.16, 1.50, name, 10, MUTED, ha="left")
+        _txt(ax, x + 0.16, 1.16, n, 14, MUTED, ha="left", weight="bold")
+    _txt(ax, 6.2, 0.55, "Self-built from local checkpoints + ComfyUI  ·  will open-source  ·  no GAN / Hunyuan", 10, MUTED)
     dest = FIG / "arch_table.png"
     fig.savefig(dest, bbox_inches="tight", pad_inches=0.08)
     plt.close()
@@ -727,11 +850,12 @@ def build_pptx(figs: dict[str, Path]) -> Path:
     _add_title(s, "Data path: domain first, then architecture coverage")
     _add_sub(s, "CIFAKE 32×32 does not transfer. SID is social. Mix-ins replace equal SID FLUX.")
     _pic(s, figs["data_path"], 1.15, 3.55)
+    # 2026-09-01, tianqi, D6 finished: official 0.977 pair 0.805, fuse 0.9929 no submit change
     _bullets(
         s,
         [
-            "D3 is the active mix for Nova. D5 = D3 ∪ D4 (new T2I) ≈ D3, not a new jump.",
-            "D6 = D5 + 118 whole-image i2i fakes (no paired reals). Train still running / pair_acc vs D5.",
+            "D3 is the mix that lifts Nova. D5 = D3 ∪ D4 ≈ D3 on official (0.975 vs 0.978), not a jump.",
+            "D6 = D5 + 118 whole-image i2i fakes (no paired reals): official 0.977, pair_acc 0.805. Fuse last4+D6 = 0.9929 vs D3 fuse 0.9930 — do not submit D6.",
         ],
         0.5,
         4.85,
@@ -741,8 +865,9 @@ def build_pptx(figs: dict[str, Path]) -> Path:
     )
     _notes(
         s,
-        "CIFAKE 官方 0.57，换 SID 社交域加 online aug 到 0.970。D3 补 UNet 和 pixel，Nova 起来。D5 并上 PixArt/GPT 官方还略掉。D6 只加 118 张 i2i fake，官方分几乎不会动，看 pair_acc。",
+        "CIFAKE 官方 0.57，换 SID 社交域加 online aug 到 0.970。D3 补 UNet 和 pixel，Nova 起来。D5 并上 PixArt/GPT 官方还略掉。D6 只加 118 张 i2i fake：官方 0.977，pair_acc 0.805，fuse 0.9929，仍提交 last-4 或 last4+D3。",
     )
+    # end
     _footer(s, 3)
 
     # 4 generators
@@ -755,26 +880,30 @@ def build_pptx(figs: dict[str, Path]) -> Path:
     )
     _footer(s, 4)
 
-    # 5 decisions
+    # 5 decisions + i2i grid
     s = prs.slides.add_slide(blank)
-    _add_title(s, "Choices: no GAN mix, i2i as paired triplets")
-    _pic(s, figs["decisions"], 1.1, 4.4)
+    _add_title(s, "i2i: 59 triplets, not 8k  —  SID still required")
+    _add_sub(s, "pair_acc = P(recon_score > paired real) on 118 pairs. A-grid has no SID.")
+    _pic(s, figs["i2i_table"], 1.12, 3.55)
+    # 2026-09-01, tianqi, i2i A1/A2/A3/D6 results on team slide 5
     _bullets(
         s,
         [
-            "GAN left as unseen: contest and EvalGEN are diffusion / flow / AR, not StyleGAN.",
-            "A2 proved 59 i2i scenes overfit. D3 already ranks reconstructions better without seeing them.",
+            "A2 i2i-only official 0.443 / pair 0.42: 59 scenes overfit. Whole-image i2i cannot replace SID.",
+            "D6 keeps the SID mix and only adds 118 i2i fakes: pair_acc 0.805, official 0.977. Contest submit stays last-4 / last4+D3.",
+            "SID tampered (label=2) is a local edit, not whole-image i2i. Do not mine DALL·E / EvalGEN into train.",
         ],
         0.5,
-        5.65,
+        4.85,
         12.3,
-        1.4,
-        16,
+        1.9,
+        15,
     )
     _notes(
         s,
-        "为什么不训 GAN：官方是 DALL·E，EvalGEN 也不是 GAN；计划里 B 轴可以留作 unseen。时间不够做 10%/20% mix。i2i 必须整图 triplet，不能拿 SID tampered 冒充。A2 官方 0.44，D3 没见过这对数据 pair_acc 反而 0.79。",
+        "i2i 必须是整图 triplet。A2 只训 59 组会过拟合，官方 0.44。没有 SID 的 A1/A3 官方最高 0.79。D6 在 D5 上加 118 张 fake，pair_acc 到 0.805，官方仍 0.977，不能换提交。GAN 不进训：官方和 EvalGEN 都不是 StyleGAN。",
     )
+    # end
     _footer(s, 5)
 
     # 6 transforms
@@ -832,24 +961,27 @@ def build_pptx(figs: dict[str, Path]) -> Path:
 
     # 9 fuse
     s = prs.slides.add_slide(blank)
-    _add_title(s, "Why fuse: complementary heads, not one network")
-    _pic(s, figs["last4_fuse"], 1.1, 4.5)
+    _add_title(s, "Why fuse: complementary heads, not one bigger net")
+    _pic(s, figs["last4_fuse"], 0.95, 2.7)
+    _pic(s, figs["fuse_why"], 3.75, 2.15)
+    # 2026-09-01, tianqi, fuse ablation: last-4 ranks DALL·E, D3 recovers Nova, do not retrain last-4
     _bullets(
         s,
         [
-            "last-4: best DALL·E ranking, conservative at 0.5 (1 FP / 60 FN). Nova rec 0.49.",
-            "D3: Nova rec 0.86, official only 0.978. Train last-4 on D3 → 0.976. Average logits → 0.993.",
+            "last-4 ranks DALL·E (0.990) but misses Nova at 0.5 (rec 0.49). D3 is the opposite: Nova rec 0.86, official only 0.978.",
+            "Average logits at inference → 0.993. Training last-4 on the mix drops official to 0.976. D5/D6 fuse 0.9927 / 0.9929 do not beat D3.",
         ],
         0.5,
-        5.7,
+        6.05,
         12.3,
-        1.4,
-        16,
+        1.1,
+        14,
     )
     _notes(
         s,
-        "解冻后 4 层提升排序，0.5 阈值会更漏。D3 补生成器族。两个目标不能靠一个网络硬叠：last-4 训在 D3 上官方掉到 0.976。推理期平均 logit 保住 DALL·E 又保住 Nova AUC。",
+        "两个头互补：last-4 负责官方 DALL·E 排序，D3 补 Nova 召回。不能把 last-4 再训到 mix 上（0.976）。D5/D6 更多 mixin 的 fuse 没有超过 0.993，所以提交仍是 last4+D3。0.5 召回 fuse 只有 0.56，AUC 才是分数。",
     )
+    # end
     _footer(s, 9)
 
     # 10 official eval
@@ -869,7 +1001,7 @@ def build_pptx(figs: dict[str, Path]) -> Path:
     _pic(s, figs["evalgen"], 1.1, 5.7)
     _notes(
         s,
-        "EvalGEN 五家都没进训练。GoT/OmniGen 大家接近 1.0，不要当 unseen 代理。Nova 才拉开：last-4 AUC 0.963 召回 0.49，D3 召回 0.86。fuse 保 AUC 0.988，0.5 召回仍只有 0.56，要讲清楚阈值。",
+        "EvalGEN 五家都没进训练。GoT/OmniGen 大家接近 1.0，不要当 unseen 代理。Nova 15 档：D3 0.9865，fuse last4+D3 0.9880。last-4 召回 0.49，D3 0.86，fuse 0.56，阈值要讲清楚。",
     )
     _footer(s, 11)
 
@@ -878,10 +1010,12 @@ def build_pptx(figs: dict[str, Path]) -> Path:
     _add_title(s, "Bad cases: FN are often non-photoreal  —  not only “perfect fakes”")
     _add_sub(s, "400 clean @0.5: fuse 1 FP / 44 FN. last-4 1 / 60. D3 4 / 20.")
     _pic(s, figs["gallery"], 1.15, 5.75)
+    # 2026-09-01, tianqi, team FN notes: comics off-target; residual photoreal DALL·E
     _notes(
         s,
-        "画册里 FN 大量是插画、卡通、绘画风 DALL·E，不只是以假乱真的实拍。SID 是社交实拍 FLUX，画风一偏，last-4 分数会过低。另外还有 pred 极低的实拍风 DALL·E，那是排序难题。FP 几乎没有，讲平台误杀贵。",
+        "画册里 FN 大量是漫画、插画、卡通、绘画风 DALL·E，不是社交实拍目标。SID 是照片级 FLUX，画风一偏分数会过低。平台场景（实拍社交图）同一阈值下漏检预期会少。但仍有 pred 极低的实拍风 DALL·E，不能说漏检会消失。FP 几乎没有，讲平台误杀贵。",
     )
+    # end
     _footer(s, 12)
 
     # 13 gallery product
@@ -974,14 +1108,15 @@ def build_demo_pptx(figs: dict[str, Path]) -> Path:
 
     s = _blank(prs)
     _add_title(s, "Mixed data")
-    _add_sub(s, "Main data is SID_Set (~140k, ~90% of train). Mix-in is ~15k other generators, replacing equal SID FLUX.")
+    _add_sub(s, "last-4 trains on SID only. We generated the families below; only the architecture mix is in the fused head.")
     _pic(s, figs["arch_table"], 1.12, 3.42)
+    # 2026-09-01, tianqi, demo mix slide: generated vs submit, no D-codes
     _bullets(
         s,
         [
-            "SID remains the train set: ~70k real + ~70k FLUX. Mix-in does not stack extra data on top of SID.",
-            "Self-built fakes from locally deployed checkpoints and ComfyUI. We will open-source this mix.",
-            "No GAN in train: the contest and EvalGEN are diffusion / flow / AR. Hunyuan is not used.",
+            "1 ckpt last-4 = SID ~140k + online aug. Extra T2I (PixArt / GPT / SDXL / nano) was built, then dropped.",
+            "2 ckpts: fuse last-4 with a mixed head on WildFake SD + Flux.2 + SD3.5 + ADM/DDPM (replace equal SID FLUX).",
+            "Self-built from local checkpoints and ComfyUI; we will open-source the mix. No GAN / Hunyuan.",
         ],
         0.5,
         4.85,
@@ -991,13 +1126,15 @@ def build_demo_pptx(figs: dict[str, Path]) -> Path:
     )
     _notes(
         s,
-        "0:25–1:10. Most of the training set is still SID_Set: about 140,000 images, 90% of train — "
-        "70k real photos and 70k FLUX fakes. We do not stack more FLUX. We replace an equal number "
-        "of SID FLUX with a thin mix-in: WildFake original SD 3,931; SDXL 1,514; PixArt, SD 3.5, "
-        "Flux.2, nano banana, and GPT-image at 1,500 each; ADM and DDPM at 1,000 each. Self-built "
-        "from local checkpoints and ComfyUI; we will open-source the mix. No GAN: contest and "
-        "EvalGEN are diffusion, flow, and autoregressive. Hunyuan is not used.",
+        "0:25–1:10. Most of the training set is still SID_Set: about 140,000 images — 70k real photos and "
+        "70k FLUX fakes. The one-checkpoint detector trains on SID only. We also generated other families "
+        "from local checkpoints and ComfyUI, and we will open-source that mix. If two checkpoints are "
+        "allowed, we fuse last-4 with a mixed head trained on WildFake original SD, Flux.2, SD 3.5, ADM, "
+        "and DDPM — replacing an equal number of SID FLUX, not stacking. We further generated PixArt, SDXL, "
+        "GPT-image, and nano banana. Those extra T2I sets did not lift the contest score, so they are not "
+        "in the submitted checkpoint. No GAN: contest and EvalGEN are diffusion, flow, and autoregressive.",
     )
+    # end
     _footer(s, 2, n_total)
 
     s = _blank(prs)
@@ -1062,9 +1199,11 @@ def build_demo_pptx(figs: dict[str, Path]) -> Path:
     _bullets(
         s,
         [
-            "Full official val gallery (SID CLIP-B): 150 FP / 1865 FN on 13,843.",
-            "FN: many non-photoreal DALL·E (anime / illustration), pred ≈ 0.001.  FP: real COCO photos, pred 0.98+.",
-            "Fuse at 0.5 on the 400 screen is 1 FP / 44 FN — low false-accusation, still conservative.",
+            # 2026-09-01, tianqi, demo FN: low FPR, comics cluster, residual photoreal
+            "Fuse @0.5 on 400: 1 FP / 44 FN — almost never accuses a real photo.",
+            "FN cluster: comics / anime / illustration DALL·E (pred ≈ 0.001). Target is social photos, not comics.",
+            "Photoreal social AIGC should miss less at the same threshold. Residual: some photoreal DALL·E still score very low.",
+            # end
         ],
         0.45,
         5.42,
@@ -1072,14 +1211,18 @@ def build_demo_pptx(figs: dict[str, Path]) -> Path:
         1.4,
         14,
     )
+    # 2026-09-01, tianqi, FN cluster is non-photoreal; do not claim all misses vanish in the wild
     _notes(
         s,
-        "2:45–3:25. HTML gallery: FP versus FN, sorted by worst prediction. Full official val, frozen "
-        "SID: 150 false positives and 1,865 false negatives. Many misses are non-photoreal DALL·E "
-        "(anime / illustration), pred near 0.001. False positives are real COCO photos scored "
-        "above 0.98. Fuse at 0.5 on the 400 screen is 1 FP / 44 FN — low false-accusation, still "
-        "conservative. High AUC does not mean 0.5 is the right operating point.",
+        "2:45–3:25. HTML gallery: false positives versus false negatives, sorted by worst prediction. "
+        "At threshold 0.5, fuse on the 400 screen is one false positive and forty-four false negatives — "
+        "we almost never accuse a real photo. Many misses are non-photoreal DALL·E: comics, anime, "
+        "illustration, scored near 0.001. That is outside our social-photo target, so on a photoreal "
+        "social feed we expect fewer misses at the same threshold. Some remaining misses are still "
+        "photoreal DALL·E, so this is not a free lunch. High AUC does not mean 0.5 is the right "
+        "operating point.",
     )
+    # end
     _footer(s, 5, n_total)
 
     s = _blank(prs)
@@ -1122,6 +1265,8 @@ def main() -> None:
         "transforms": fig_transforms(),
         "model_bars": fig_model_bars(),
         "last4_fuse": fig_last4_fuse(),
+        "fuse_why": fig_fuse_why(),
+        "i2i_table": fig_i2i_table(),
         "fuse_arch": fig_fuse_arch(),
         "arch_table": fig_arch_table(),
         "eval_official": fig_eval_official(),

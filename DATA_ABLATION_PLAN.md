@@ -743,6 +743,9 @@ D3 开源骨架（flux2 / sd35 / WildFake UNet 4k / ADM / DDPM）加上 D4 新 T
 
 # 2026-08-31, tianqi, D6 = D5 plus 118 whole-image i2i fakes after Nova eval
 D5 mixin 再加上 A2 完整 triplet 的 i2i fake（Codex + nano reconstruction，约 118 张，不含配对 real）。等权替换 SID FLUX。协议同 D5：冻结 CLIP-B + online aug。Nova 评完再训。对照 D5 看官方 400 / EvalGEN clean / i2i pair_acc。118 / 14 万 ≈ 0.08%，预期官方分几乎不动，pair_acc 是否相对 D5 的 0.79 有增益才是这轮问题。
+
+# 2026-09-01, tianqi, D6 finished numbers
+结果：官方 400 **0.977**（D5 0.975，D3 0.978），EvalGEN clean 0.994，pair_acc **0.805**（D5 0.79）。fuse last4+D6 = **0.9929**，不赢 last4+D3 0.9930。不提交 D6。
 # end
 
 ---
@@ -1054,24 +1057,26 @@ SID 全量 14 万级数据只在最终 1–2 个配置中使用。
 
 数据线是否完成，以这张表为准。
 
+# 2026-09-01, tianqi, fill A/D master table after D6
 | Experiment | Data Change | Official Formula | Δ vs SID | Unseen AUROC | EvalGEN Recall | Worst Robust #1 | #2 | #3 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| SID baseline | SID only | | — | | | | | |
-| A1 | t2i | | | | | | | |
-| A2 | i2i | | | | | | | |
-| A3 | t2i+i2i | | | | | | | |
+| SID baseline | SID only, frozen CLIP-B | 0.970 | — | EvalGEN 0.992 | Nova rec 0.71 | JPEG-30 | crop | — |
+| A1 | t2i only, no SID | 0.595 | −0.375 | 0.760 | — | — | — | — |
+| A2 | 59-triplet i2i only | 0.443 | −0.527 | 0.810 | pair_acc 0.42 | — | — | — |
+| A3 | t2i + 118 i2i, no SID | 0.786 | −0.184 | 0.786 | pair_acc 0.59 | — | — | — |
 | B1 | Diffusion | | | | | | | |
-| B2 | Diffusion+GAN | | | | | | | |
+| B2 | Diffusion+GAN | skipped (contest/EvalGEN are not GAN) | | | | | | |
 | C-UNet | SD1.5 | | | | | | | |
-| C-DiT | PixArt/Hunyuan | | | | | | | |
+| C-DiT | PixArt/Hunyuan | PixArt in D4; Hunyuan unused | | | | | | |
 | C-Flow | SID-FLUX | | | | | | | |
-| C-Pixel | ADM/DDPM | | | | | | | |
-| D1 | SID only | | | | | | | |
-| D2 | Self-built | | | | | | | |
-| D3 | SID + Self-built | | | | | | | |
-| D4 | SID + nano + PixArt + SDXL + GPT | | | | | | | |
-| D5 | SID + D3 ∪ D4 | | | | | | | |
-| D6 | SID + D5 ∪ i2i fakes | | | | | | | |
+| C-Pixel | ADM/DDPM | 0.649 full | −0.321 | never fires on DALL·E | | | | |
+| D1 | SID 8k only | 0.734 full | | | | | | |
+| D2 | Self-built 8k | | | | | | | |
+| D3 | SID + UNet/pixel/flux2/sd35 (~9.6k) | **0.978** | +0.008 | EvalGEN **0.995**, Nova **0.988** | Nova rec **0.86** | JPEG-30 0.944 | ×0.25 0.958 | — |
+| D4 | SID + nano/PixArt/SDXL/GPT (~6k) | 0.973 | +0.003 | EvalGEN 0.989, Nova 0.963 | Nova rec 0.71 | — | — | — |
+| D5 | SID + D3 ∪ D4 (~15k) | 0.975 | +0.005 | EvalGEN 0.995, Nova 0.986 | Nova rec 0.85 | — | — | — |
+| D6 | SID + D5 ∪ 118 i2i fakes | 0.977 | +0.007 | EvalGEN 0.994 | pair_acc **0.805** | — | — | — |
+# end
 
 最终数据侧必须能用这张表回答：
 

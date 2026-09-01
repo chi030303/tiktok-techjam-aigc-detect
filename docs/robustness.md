@@ -48,5 +48,27 @@ EvalGEN never enters training. Nova is the hard family.
 
 Last-4 is conservative at 0.5 (misses Nova); D3 recovers recall; fuse keeps last-4’s DALL·E ranking and D3’s Nova AUC.
 
+<!-- 2026-09-01, tianqi, D3–D6 mix-in composition and scores after D6 finished -->
+## SID mix-ins D3–D6 (data, not architecture)
+
+Same protocol: full SID ~140k, **replace** equal SID FLUX, frozen CLIP-B linear + online aug. Official val and EvalGEN never enter train. 400-subset unless noted.
+
+| Mix | Extra fakes | Official 400 | clean / robust | EvalGEN clean | Nova AUC | Nova rec@0.5 | pair_acc |
+|---|---|---:|---:|---:|---:|---:|---:|
+| last-4 (SID only) | — | **0.990** | 0.991 / 0.988 | 0.989 | 0.963 | 0.49 | 0.64 |
+| **D3** | WildFake UNet 4k + flux2/sd35 + ADM/DDPM 1k each (~9.6k; 603 nano then) | **0.978** | 0.985 / 0.972 | **0.995** | **0.988** | **0.86** | 0.79 |
+| D4 | nano 1.5k + PixArt 1.5k + SDXL 1.5k + GPT-image 1.5k | 0.973 | — | 0.989 | 0.963 | 0.71 | — |
+| D5 = D3 ∪ D4 | ~15k | 0.975 | 0.982 / 0.968 | 0.995 | 0.986 | 0.85 | 0.79 |
+| D6 = D5 + 118 i2i | D5 + Codex/nano reconstructions, no paired reals | 0.977 | 0.984 / 0.970 | 0.994 | 0.984 (15-cond) | — | **0.805** |
+| **fuse last4+D3** | mean logit | **0.9930** | 0.995 / 0.991 | **0.997** | 0.988 | 0.56 | — |
+| fuse last4+D4 | mean logit | 0.990 | — | — | — | — | — |
+| fuse last4+D5 | mean logit | 0.9927 | 0.995 / 0.991 | — | 0.987 | — | — |
+| fuse last4+D6 | mean logit | 0.9929 | 0.995 / 0.991 | — | 0.986 | — | — |
+
+Nova **15-cond** formula (not the contest score): fuse last4+D3 **0.9880**, fuse D5 0.9872, fuse D6 0.9857, D3 mix 0.9865, D5 mix 0.9843, D6 mix 0.9814.
+
+**Takeaway:** D3 is the mix that lifts Nova. D4 extra T2I does not. D5 ≈ D3. D6 only helps i2i pair ranking. Submit last-4 (1 ckpt) or fuse last4+D3 (2 ckpts).
+<!-- end -->
+
 CSV sources: `outputs/tables/official_val400_fuse_u4_d3.csv`, `outputs/tables/compare_spec/README.md`. Figure snapshot: `docs/robustness/official_val400.json`.
 # end
