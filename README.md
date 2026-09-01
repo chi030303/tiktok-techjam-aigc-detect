@@ -33,6 +33,38 @@ python predict.py ./fixtures/sample_images ./outputs/pred.json
 bash scripts/check.sh
 ```
 
+# 2026-09-01, tianqi, put Reproduce right after Quick start for judges
+## Reproduce
+
+Need GPU + CLIP-B weights. Official val / EvalGEN stay **out of training**.
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+pip install torch torchvision transformers
+python scripts/download_backbones.py --only clip-vit-base-patch16
+
+# single submit ckpt
+python predict.py <image_dir> out.json \
+  --ckpt experiments/clipb16_linear_sid_unfreeze4/ckpts/best.pt
+
+# optional fuse (last4 + D3)
+python predict.py <image_dir> out.json \
+  --ckpt experiments/clipb16_linear_sid_unfreeze4/ckpts/best.pt \
+  --ckpt-b experiments/clipb16_linear_sid_d3_mix/ckpts/best.pt
+```
+
+Retrain last-4: `python scripts/run_experiment.py experiments/clipb16_linear_sid_unfreeze4/recipe.yaml --train`  
+D3 mix: `experiments/clipb16_linear_sid_d3_mix/recipe.yaml`. Demo val robustness:
+
+```bash
+python scripts/run_full_eval.py --split official_val --conditions full --max-images 400 --seed 0 \
+  --ckpt last4=experiments/clipb16_linear_sid_unfreeze4/ckpts/best.pt
+```
+
+Frozen SID DINOv2 (ablation ~0.90) remains in release `v0.1-model` if you need that probe.
+# end
+
 ## Transforms (src/transforms/)
 
 Official 6 robustness transforms: **14 frozen eval settings + clean = 15 conditions**. Field tables, ambiguity decisions and seed rules: [docs/transforms.md](docs/transforms.md).
@@ -134,36 +166,6 @@ Tables land in `outputs/tables/` (csv / md / json). Full transform list and hold
 
 15-condition table, Nova split, and the full D3–D6 table: [docs/robustness.md](docs/robustness.md). Full grid: [outputs/tables/compare_spec/README.md](outputs/tables/compare_spec/README.md). Errors: [docs/error_analysis.md](docs/error_analysis.md).
 # end
-
-## Reproduce
-
-Need GPU + CLIP-B weights. Official val / EvalGEN stay **out of training**.
-
-```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-pip install torch torchvision transformers
-python scripts/download_backbones.py --only clip-vit-base-patch16
-
-# single submit ckpt
-python predict.py <image_dir> out.json \
-  --ckpt experiments/clipb16_linear_sid_unfreeze4/ckpts/best.pt
-
-# optional fuse (last4 + D3)
-python predict.py <image_dir> out.json \
-  --ckpt experiments/clipb16_linear_sid_unfreeze4/ckpts/best.pt \
-  --ckpt-b experiments/clipb16_linear_sid_d3_mix/ckpts/best.pt
-```
-
-Retrain last-4: `python scripts/run_experiment.py experiments/clipb16_linear_sid_unfreeze4/recipe.yaml --train`  
-D3 mix: `experiments/clipb16_linear_sid_d3_mix/recipe.yaml`. Demo val robustness:
-
-```bash
-python scripts/run_full_eval.py --split official_val --conditions full --max-images 400 --seed 0 \
-  --ckpt last4=experiments/clipb16_linear_sid_unfreeze4/ckpts/best.pt
-```
-
-Frozen SID DINOv2 (ablation ~0.90) remains in release `v0.1-model` if you need that probe.
 
 ## Limitations
 
