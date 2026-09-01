@@ -1,0 +1,64 @@
+{
+  "7": {
+    "inputs": {"filename_prefix": "pixart_simple", "images": ["14", 0]},
+    "class_type": "SaveImage",
+    "_meta": {"title": "Save Image"}
+  },
+  "10": {
+    "inputs": {"text": "PixArt positive prompt placeholder", "clip": ["20", 0]},
+    "class_type": "CLIPTextEncode",
+    "_meta": {"title": "Positive Prompt"}
+  },
+  "11": {
+    "inputs": {
+      "text": "malformed hands, deformed hands, poorly formed hands, fused fingers, extra fingers, missing fingers, duplicated fingers, broken fingers, malformed limbs, extra limbs, missing limbs, fused limbs, duplicated body parts, disconnected body parts, impossible anatomy, distorted face, duplicated face, misaligned facial features, malformed eyes, malformed teeth, melted details, merged objects, fused objects, floating objects, disconnected objects, impossible geometry, inconsistent perspective, warped straight lines, broken object structure, incoherent background, repeated objects, cloned elements, repetitive texture, tiled pattern, overly smooth skin, color banding, posterization, chromatic artifacts, compression artifacts, unreadable text, garbled text, random letters, caption, subtitle, watermark, logo, signature, border",
+      "clip": ["20", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {"title": "Negative Prompt"}
+  },
+  "12": {
+    "inputs": {
+      "seed": 812045847300606,
+      "steps": 30,
+      "cfg": 5,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": ["19", 0],
+      "positive": ["10", 0],
+      "negative": ["11", 0],
+      "latent_image": ["13", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": {"title": "KSampler"}
+  },
+  "13": {
+    "inputs": {"width": 1280, "height": 768, "batch_size": 1},
+    "class_type": "EmptyLatentImage",
+    "_meta": {"title": "Empty Latent"}
+  },
+  "14": {
+    "inputs": {"samples": ["12", 0], "vae": ["21", 0]},
+    "class_type": "VAEDecode",
+    "_meta": {"title": "VAE Decode"}
+  },
+  "19": {
+    "inputs": {
+      "unet_name": "pixart_sigma_1024/transformer/diffusion_pytorch_model.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {"title": "Load Diffusion Model"}
+  },
+  "20": {
+    "inputs": {"clip_name": "t5xxl_fp16.safetensors", "type": "pixart", "device": "default"},
+    "class_type": "CLIPLoader",
+    "_meta": {"title": "Load CLIP"}
+  },
+  "21": {
+    "inputs": {"vae_name": "sdxl_vae_fp16_fix/diffusion_pytorch_model.safetensors"},
+    "class_type": "VAELoader",
+    "_meta": {"title": "Load VAE"}
+  }
+}
