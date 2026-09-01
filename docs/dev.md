@@ -1,8 +1,6 @@
 # 开发规范（Vast + 本机）
 
-<!-- 2026-08-29, tianqi, team handbook: git pointer, tmux, venv, GPUs, SSH -->
 进 GPU 干活之前先读这一页。Git 细则仍以 [SOP-git.md](SOP-git.md) 为准，这里只写**机器上怎么活着、怎么不互相踩**。
-<!-- end -->
 
 | 文档 | 内容 |
 |---|---|
@@ -105,7 +103,7 @@ python -c "import torch; print(torch.cuda.is_available(), torch.cuda.device_coun
 
 ## 4. 显卡
 
-这台是 **2× RTX 4090**。检测器单卡够；双卡用来 **两件事并行**，不是把一个 CLIP 训快一倍。
+这台是 **2× RTX 4090**。GPU1 训练；GPU0 推理 / 15 档评测。不要把一个 CLIP 拆到两张卡上 data-parallel。
 
 ```bash
 nvidia-smi          # 谁在占哪张卡、显存
@@ -115,11 +113,11 @@ nvidia-smi -L       # UUID
 开训 / 出图前 **锁死可见卡**，不要让进程默认占满两张：
 
 ```bash
-# 卡 0：Flux 出图（若做）
-CUDA_VISIBLE_DEVICES=0 python ...
+# 卡 0：推理 / 评测
+CUDA_VISIBLE_DEVICES=0 python scripts/run_full_eval.py --split official_val --conditions full --max-images 400
 
-# 卡 1：训练 / 抽特征
-CUDA_VISIBLE_DEVICES=1 python scripts/run_experiment.py experiments/clipb16_linear_sid/recipe.yaml
+# 卡 1：训练
+CUDA_VISIBLE_DEVICES=1 python scripts/run_experiment.py experiments/clipb16_linear_sid_unfreeze4/recipe.yaml --train
 ```
 
 Recipe 里的 `gpu:` 字段应和上面一致。群里报一声：「我占用 GPU1，大概 N 小时」。
@@ -140,9 +138,7 @@ Recipe 里的 `gpu:` 字段应和上面一致。群里报一声：「我占用 G
 3. 命名：`<骨干>_<头>_<数据>_<技巧>`，例如 `clipb16_linear_sid`。
 4. `python scripts/run_experiment.py experiments/<name>/recipe.yaml` 先 dry-run，确认 `data` / `models` 指到 `/workspace/...`。
 5. `train.forbid` 必须含 `val`、`evalgen`、`demo_wildfake`。
-<!-- 2026-08-29, tianqi, eval is a separate script; val stays out of train -->
 6. 训完评测：`python scripts/run_eval.py robustness --split official_val --conditions daily --max-images 400 --experiment <name> --ckpt .../ckpts/best.pt`。不要拿 `data/val` 开训。
-<!-- end -->
 
 ## 6. 日常不要做
 
@@ -154,4 +150,3 @@ Recipe 里的 `gpu:` 字段应和上面一致。群里报一声：「我占用 G
 - 改 `authorized_keys` 时把手动换行插进公钥中间。
 
 卡住时群里一句话：**哪张卡、哪条命令、还要多久**。
-<!-- end -->

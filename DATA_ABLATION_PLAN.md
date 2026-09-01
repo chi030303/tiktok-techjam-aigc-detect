@@ -449,13 +449,10 @@ fake = 8k
 | A2 i2i-only | 8k 整图 i2i |
 | A3 t2i+i2i | 4k t2i + 4k i2i |
 
-<!-- 2026-08-31, tianqi, 60-triplet hard set is a diagnostic, not 8k A2 -->
 当前只有 **60 组三元组**（真图 + Gemini 重建 + Codex 重建，`source_id` 绑定）。
 这不是计划里的 8k A2。做法：先对已有 SID/T2I ckpt 做 **配对打分**
 `P(重建 > 同场景真图)`，再决定要不要小学习率微调。不要把 180 张当独立样本混进 D4。
-# end
 
-<!-- 2026-08-31, tianqi, scaled A-grid: A1=D2 t2i, A2=60+120 i2i, A3=D2+i2i fakes -->
 可跑的 A 轴（frozen CLIP-B, feat cache, `scripts/a_grid.sh`，排在 D5 + `a2_i2i.sh` 之后）：
 
 | 实验 | 实际规模 | 指标 |
@@ -465,7 +462,6 @@ fake = 8k
 | A3 t2i+i2i | A1 再混入 120 i2i fake | 看相对 A1 的 official / EvalGEN / pair_acc |
 
 不是 8k vs 8k。A2 只有 60 场景，不能当 submit。主看 **pair_acc** 和 EvalGEN，不要只看 Acc@0.5。
-# end
 
 ### t2i
 
@@ -716,7 +712,6 @@ SID 作为 base。
 
 ### D4 SID + nano_banana + PixArt + SDXL + GPT
 
-# 2026-08-31, tianqi, D4 includes GPT; PixArt stands in for DiT; no Hunyuan
 SID 作为 base，mixin 换成：
 
 - **全部** nano_banana（Vertex 已落盘 ~1500）
@@ -727,26 +722,20 @@ SID 作为 base，mixin 换成：
 **不进 Hunyuan**：造数据同学明确混元输出不可用于训练。GPT 和官方 val DALL·E 同属 OpenAI 文生图，官方分可能偏乐观；**unseen 以 EvalGEN 为准，Nova 是硬家族**。不进 EvalGEN 图、不进 `data/val`。等权替换 SID FLUX。协议与 D3 相同：冻结 CLIP-B + online aug。
 
 成功标准同 D3：官方 val 不掉、EvalGEN（尤其 Nova）改善。
-# end
 
 ---
 
 ### D5 SID + D3 ∪ D4
 
-# 2026-08-31, tianqi, D5 is the combined mix after D4 probe
 D3 开源骨架（flux2 / sd35 / WildFake UNet 4k / ADM / DDPM）加上 D4 新 T2I（全量 nano、PixArt、自建 SDXL、GPT）。文件名去重。无 Hunyuan。协议同 D3/D4。D4 出分后再训。
-# end
 
 ---
 
 ### D6 SID + D5 ∪ i2i fakes
 
-# 2026-08-31, tianqi, D6 = D5 plus 118 whole-image i2i fakes after Nova eval
 D5 mixin 再加上 A2 完整 triplet 的 i2i fake（Codex + nano reconstruction，约 118 张，不含配对 real）。等权替换 SID FLUX。协议同 D5：冻结 CLIP-B + online aug。Nova 评完再训。对照 D5 看官方 400 / EvalGEN clean / i2i pair_acc。118 / 14 万 ≈ 0.08%，预期官方分几乎不动，pair_acc 是否相对 D5 的 0.79 有增益才是这轮问题。
 
-# 2026-09-01, tianqi, D6 finished numbers
 结果：官方 400 **0.977**（D5 0.975，D3 0.978），EvalGEN clean 0.994，pair_acc **0.805**（D5 0.79）。fuse last4+D6 = **0.9929**，不赢 last4+D3 0.9930。不提交 D6。
-# end
 
 ---
 
@@ -1057,7 +1046,6 @@ SID 全量 14 万级数据只在最终 1–2 个配置中使用。
 
 数据线是否完成，以这张表为准。
 
-# 2026-09-01, tianqi, fill A/D master table after D6
 | Experiment | Data Change | Official Formula | Δ vs SID | Unseen AUROC | EvalGEN Recall | Worst Robust #1 | #2 | #3 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
 | SID baseline | SID only, frozen CLIP-B | 0.970 | — | EvalGEN 0.992 | Nova rec 0.71 | JPEG-30 | crop | — |
@@ -1076,7 +1064,6 @@ SID 全量 14 万级数据只在最终 1–2 个配置中使用。
 | D4 | SID + nano/PixArt/SDXL/GPT (~6k) | 0.973 | +0.003 | EvalGEN 0.989, Nova 0.963 | Nova rec 0.71 | — | — | — |
 | D5 | SID + D3 ∪ D4 (~15k) | 0.975 | +0.005 | EvalGEN 0.995, Nova 0.986 | Nova rec 0.85 | — | — | — |
 | D6 | SID + D5 ∪ 118 i2i fakes | 0.977 | +0.007 | EvalGEN 0.994 | pair_acc **0.805** | — | — | — |
-# end
 
 最终数据侧必须能用这张表回答：
 

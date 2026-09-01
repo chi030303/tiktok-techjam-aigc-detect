@@ -1,10 +1,7 @@
-# 2026-09-01, tianqi, spec-compare after D4/D5/D6 mix + fuse
 # Spec-compare eval (as of 2026-09-01)
 
 Headline: **0.50×AUC_clean + 0.50×AUC_robust**. Acc@0.5 is not the score.
 400 = balanced official-val screen (200/200). Train size is still ~140k unless noted.
-
-Open the canvas beside chat: spec-compare-eval.
 
 D3 mix is **frozen CLIP-B linear + online aug** (same protocol as `clipb16_linear_sid_aug`). D3 dualbranch is the same mix plus an RGB + highpass CNN tower. Fuse is **mean logit of CLIP-B last4 + D3 mix at infer** (no retrain).
 
@@ -24,7 +21,6 @@ CLIP-L SID-aug **0.995 is EvalGEN clean AUROC**, not official formula. Official 
 10. D4 (nano / PixArt / SDXL / GPT, 6014): official **0.973**, EvalGEN 0.989, Nova AUC **0.963** (same as last-4). Extra T2I does not lift Nova. Fuse last4+D4 = **0.990** (no gain).
 11. D5 = D3 ∪ D4 (~15k): official **0.975**, EvalGEN 0.995, Nova 0.986. ≈ D3, not a jump. Fuse last4+D5 = **0.9927**.
 12. D6 = D5 + 118 i2i fakes: official **0.977**, pair_acc **0.805** (D5 was 0.79). Fuse last4+D6 = **0.9929**. Do not submit D4/D5/D6 heads.
-
 
 ## Ranking (400 formula unless n=13843)
 
@@ -126,4 +122,3 @@ How to share: [docs/badcase-galleries.md](../../../docs/badcase-galleries.md).
 
 Full official_val: CLIP-B SID 150 FP / 1865 FN; CLIP-L 80 / 2173; D1 1730 / 2759; C-Pixel 1 / 8838.
 
-# end

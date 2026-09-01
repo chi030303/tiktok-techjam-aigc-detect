@@ -25,12 +25,8 @@
 
 ## 提交物对照
 
-<!-- 2026-08-31, tianqi, point freeze list at written deliverable files -->
 - Devpost 英文说明 → [devpost.md](devpost.md)
 - 公开 GitHub + README 可复现
 - `predict.py` 目录 → JSON
-<!-- 2026-09-01, tianqi, demo talk is 4 min English, aligned with the 6-page PPT -->
 - YouTube 4 min English ← [demo_script.md](demo_script.md)
-<!-- end -->
 - Robustness 表 + 误差分析 → [robustness.md](robustness.md) / [error_analysis.md](error_analysis.md)
-# end

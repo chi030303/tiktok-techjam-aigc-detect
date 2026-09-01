@@ -1,4 +1,3 @@
-# 2026-08-31, tianqi, D3: full SID ~140k + self-built/UNet mix-in, replace SID FLUX
 name: clipb16_linear_sid_d3_mix
 description: Full SID train, drop equal FLUX fakes, mix self-built + SDXL UNet + thin ADM/DDPM. Frozen CLIP-B + online aug.
 owner: kiki
@@ -40,4 +39,3 @@ optim:
   seed: 20260831
 
 gpu: "1"
-# end

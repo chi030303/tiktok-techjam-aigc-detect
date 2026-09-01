@@ -1,9 +1,8 @@
-# 2026-08-31, tianqi, self-built data release: wait until 1 Sep morning; not a contest field
-# Dataset release (after the deadline)
+# Self-built mix-in (not a required contest field)
 
-**Do not publish tonight.** Contest freeze is 1 Sep 12:00 GMT+8. Open the dataset **tomorrow morning** after the repo is public and the Devpost is in, so we do not scramble licenses during judging.
+SID, COCO, DALL·E, and EvalGEN are **not** republished here. Official val / EvalGEN stay hold-out.
 
-This is **not** a required TechJam field. The official demo val and EvalGEN must **not** be re-hosted as “our dataset”.
+Self-built images: [Kaggle wwjjames/aigctrace-mix](https://www.kaggle.com/datasets/wwjjames/aigctrace-mix) (CC BY 4.0).
 
 ## What to put where
 
@@ -13,27 +12,19 @@ This is **not** a required TechJam field. The official demo val and EvalGEN must
 | CIFAKE | already on Kaggle | Link only |
 | COCO val2017 + DALL·E Advanced (`data/val`) | official demo | **No.** Hold-out, not ours to republish as a mix |
 | EvalGEN | hold-out | **No.** |
-| **Self-built t2i** (Flux.2, SD3.5, Nano Banana, PixArt, SDXL, …) | **Kaggle Dataset** (good for zips + license + card) | Tomorrow morning, if licenses allow |
-| **i2i 59 triplets** (real + nano + Codex, `source_id`) | same Kaggle dataset, separate folder | Yes, with pairing file |
-| GPT-image fakes | same zip or drop | **Check OpenAI image ToS** before including; drop if unclear |
+| **Self-built t2i / i2i** (Flux.2, SD3.5, nano, PixArt, SDXL, GPT, i2i) | [Kaggle: wwjjames/aigctrace-mix](https://www.kaggle.com/datasets/wwjjames/aigctrace-mix) | Yes — mix-in only |
 | Hunyuan | never used | Do not add |
 
-**Kaggle vs Hugging Face:** Kaggle is fine for a **self-built image zip** (versioned, license box, DOI-ish URL). Hugging Face is better if you later add a loading script. Pick **one** primary URL and put it in README. Do not upload 14万 SID.
+Unzip so these folders sit under `$DATA_ROOT/self_built/` (that directory is `--self-root` for `scripts/build_d3_mixin.py`):
 
-## Suggested Kaggle card (draft)
+| Folder | Used by |
+|---|---|
+| `flux2/` | D3 |
+| `sd35/` | D3 |
+| `nano_banana_vertex_batch/` | D3 |
+| `GPT/`, `pixart_sigma_quality_v2/`, `sdxl_full_refiner_v1/` | D4 / D5 (not the submit mix) |
+| `i2i/` | D6 (not the submit mix) |
 
-- **Title:** TechJam AIGC mix-in (self-built t2i + 59 i2i triplets)
-- **Task:** binary labels only (`REAL=0`, `FAKE=1`); not for object detection
-- **Must include:** `LICENSE`, generator name per file, `source_id` for i2i, “not trained on COCO val / DALL·E / EvalGEN”
-- **Do not include:** prompts that copy trademarked characters; `data/val`; EvalGEN
+D3 also needs WildFake slices via `python scripts/download_wildfake_subset.py C_unet_sd_original C_pixel_adm C_pixel_ddpm`. last-4 training does not need the Kaggle zip.
 
-## Tomorrow morning checklist
-
-1. Repo already **public**.
-2. Strip GPT-image if legal is unsure.
-3. Upload zip of **self-built only** + jsonl manifests (`D3_sid_mixin` / `A2_i2i_hard60` paths rewritten to relative).
-4. Add one paragraph + URL under README “Datasets”.
-5. Do not claim official val numbers were trained on this zip.
-
-Vast paths stay private (`/workspace/...`).
-# end
+Do not claim official val numbers were trained on the Kaggle zip. Submit last-4 is SID-only; the fused D3 head replaces equal SID FLUX with the mix.

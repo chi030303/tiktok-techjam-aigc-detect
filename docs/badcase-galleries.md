@@ -1,4 +1,3 @@
-# 2026-08-31, tianqi, how teammates open bad-case HTML
 # 误差画册怎么看
 
 小画册（400 子集、每类 ≤60 张）是 **自包含 HTML**（缩略图 base64 嵌进文件）。**不要在 Vast Jupyter / 文件浏览器里点开。** 那边不会当网页渲染，看起来是空白或源码。
@@ -36,4 +35,3 @@ rsync -avz -e "ssh -p <PORT> -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes" \
 
 **不要。** 截止视频 ≤3 分钟。交付物是 `predict.py`，不是 demo 站。录屏用 slides + 必要时本机打开一个 HTML 画册即可。
 
-# end

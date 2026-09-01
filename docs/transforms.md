@@ -4,11 +4,8 @@
 > schema 以本文件 + `src/transforms/spec.py` 为准，改动需同步两处。官方演示集
 > `data/val/`（COCO val2017 + DALL·E Advanced）带 `DO_NOT_TRAIN` 标记：作
 > `--split train` 索引会被拒绝，评测索引放行（见 [data.md](data.md)）。
->
-> <!-- 2026-08-29, tianqi, eval is an adapter, not a second op implementation -->
 > 评测 `src/eval/transforms.py` 只做薄封装：条件名、种子、像素都走 spec/ops。
 > jitter 用一档独立采样 ±20%（方案 A），没有 `jitter_m20`。
-> <!-- end -->
 
 ## 1. 官方档位（冻结，勿改参数）
 
@@ -75,16 +72,13 @@ data/
 | `generator` | str\|null | 假图的生成器（如 `sd14`、`flux1-dev`），真图为 null |
 | `split` | str | train / val / test / unseen |
 | `width` / `height` | int | 原生尺寸 |
-<!-- 2026-08-30, tianqi, ablation + leak-audit columns; optional in old JSONL -->
 | `family` | str\|null | 假图 `gan` / `diffusion`；真图 **null** |
 | `arch` | str\|null | `unet` / `dit` / `flow` / `pixel`；真图 null；GAN 也用 null |
 | `generation_type` | str\|null | 假图 `t2i` / `i2i`；真图 null（与 family 分开，见 DATA_ABLATION_PLAN.md） |
 | `content_type` | str | `real` / `full_synthetic` / `partial_manipulation`。缺省时由 label 推断。**tampered 标第三种，默认不进 train** |
 | `original_format` | str\|null | 落盘后缀（`jpeg`→`jpg`）。审计 DDA 格式捷径，不是训练目标 |
 | `phash` | str\|null | 64-bit DCT perceptual hash，16 位 hex。去重、以及 SID train vs 官方 val 的 **整图拷贝** 碰撞。局部篡改通常对不上 COCO 原图，那些靠 `content_type` 排除 |
-<!-- 2026-08-31, tianqi, source_id binds i2i real/fake reconstructions of one scene -->
 | `source_id` | str\|null | 同一场景三元组共享；i2i 真图与 Gemini/Codex 重建图绑在一起。旧 JSONL 可缺省 |
-<!-- end -->
 
 **transform**（`build.py` 产出，每张派生图一行；source 字段反范式带入，评估免 join）：
 
@@ -98,9 +92,7 @@ data/
 | `path` | str | 派生图路径 |
 | `label` / `source_dataset` / `generator` / `split` | | 从 source 复制 |
 | `width` / `height` | int | 派生后尺寸（crop 变小，其余不变） |
-<!-- 2026-08-30, tianqi, transform rows copy source audit columns -->
 | `family` / `arch` / `generation_type` / `content_type` / `original_format` / `phash` | | 从 source 复制（旧 transform JSONL 缺这几列也能读） |
-<!-- end -->
 
 校验：core 字段缺失/多余/取值非法会在构建时报错。`family` 等新列可缺省为 null。
 旧 CIFAKE source JSONL（没有 phash）仍然能 `read_jsonl`。

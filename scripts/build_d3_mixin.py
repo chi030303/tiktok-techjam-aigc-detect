@@ -39,7 +39,14 @@ def _list_images(root: Path) -> list[Path]:
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--self-root", type=Path, default=Path("/workspace/data_new/output"))
+    # 2026-09-01, tianqi, default Kaggle mix-in tree (flux2/sd35/nano), not Vast data_new
+    p.add_argument(
+        "--self-root",
+        type=Path,
+        default=None,
+        help="unzipped Kaggle aigctrace-mix root (folders flux2, sd35, nano_banana_vertex_batch)",
+    )
+    # end
     p.add_argument("--unet-n", type=int, default=4000)
     # 2026-08-31, tianqi, a thin pixel-space slice; DALL·E official val stays unseen
     p.add_argument("--adm-n", type=int, default=1000)
@@ -53,7 +60,9 @@ def main() -> None:
         help="default: $DATA_ROOT/manifests/ablation/D3_sid_mixin.jsonl",
     )
     args = p.parse_args()
-
+    # 2026-09-01, tianqi, judges unzip to $DATA_ROOT/self_built; Vast still passes --self-root
+    self_root = args.self_root or (data_root() / "self_built")
+    # end
     out = args.out or (data_root() / "manifests" / "ablation" / "D3_sid_mixin.jsonl")
     out.parent.mkdir(parents=True, exist_ok=True)
 
@@ -62,7 +71,7 @@ def main() -> None:
     by_gen: Counter[str] = Counter()
 
     for folder, generator, arch in SELF_DIRS:
-        for img in _list_images(args.self_root / folder):
+        for img in _list_images(self_root / folder):
             key = img.name.lower()
             if key in seen_names:
                 continue

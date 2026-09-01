@@ -1,11 +1,8 @@
-# 2026-09-01, tianqi, Devpost form fill-in (paste each block; video/dataset tomorrow)
 # Devpost submission — copy-paste
 
 Repo (make **public** before submit): https://github.com/chi030303/tiktok-techjam-aigc-detect
 
-Tomorrow only: YouTube URL, optional Kaggle for self-built images ([dataset_release.md](dataset_release.md)). Do **not** upload COCO / DALL·E / EvalGEN / SID 14万 / `i2i_nano_banana.zip`.
-
-# end
+Submit weights: [v1.0-submit](https://github.com/chi030303/tiktok-techjam-aigc-detect/releases/tag/v1.0-submit). Self-built mix-in: [Kaggle aigctrace-mix](https://www.kaggle.com/datasets/wwjjames/aigctrace-mix). Do **not** upload COCO / DALL·E / EvalGEN / SID 14万 / `i2i_nano_banana.zip`.
 
 ---
 
@@ -174,4 +171,3 @@ Upload `/tmp/techjam_judge_pack.zip`. Weights stay in GitHub Releases or the rec
 | Invite teammates; they **Accept** | Hit Submit if not already; you can edit until noon |
 
 Submit model in the story: **last-4 0.990** (one ckpt) or **fuse 0.993** (two ckpts).
-# end

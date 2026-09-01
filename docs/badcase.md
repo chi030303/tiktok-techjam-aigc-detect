@@ -57,9 +57,7 @@ python scripts/run_badcase.py --pred outputs/pred_evalgen.json \
 分页目录（`index.html` + `thumbs/*.jpg`），每页约 36 张，避免浏览器卡死。
 `--from-html giant.html` 可以把已经生成的巨型单文件拆成同一套分页目录。
 
-<!-- 2026-08-31, tianqi, current high-AUC galleries + do not open on Vast Jupyter -->
 组员看画册：把 `outputs/tables/badcase_galleries/` 和 `badcase_compare/` **下到本机**，打开 `index.html`。Vast Jupyter / 文件浏览器点不开。步骤见 [badcase-galleries.md](badcase-galleries.md)。当前入口含 fuse 400、last4、D3 mix 等。全量 SID 打开文件夹里的 `index.html`，不要打开旧的 30MB 单文件。
-<!-- end -->
 
 ```bash
 # 服务器实战：compare_spec 里某模型 clean 条件的 bad case（注意 --predict-root）

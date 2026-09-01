@@ -1,12 +1,10 @@
 # SOP：GitHub 分支工作流
 
-<!-- 2026-08-29, tianqi, personal-branch-first; kiki merges main -->
 默认：**尽量长时间待在自己的分支上开发。** 日常修改只 commit / push 到个人 `feat/<who>-...`，**不要直接改 `main`。** 一整块功能在自己分支上测通（`bash scripts/check.sh` + 你负责的那部分能跑）之后再开 PR，由 **kiki（仓库 owner）合进 `main`。**
 
 `main` 必须随时能跑 `predict.py`。不要把数据、权重、`.env` 推进 GitHub。
 
 机器上的 tmux / venv / 显卡：[dev.md](dev.md)。
-<!-- end -->
 
 ## 0. 第一次（每人做一次）
 
@@ -52,9 +50,7 @@ git checkout -b feat/<who>-<thing>
 - 72 小时内用 **merge**，不要 rebase。
 - 每天至少一次：`git fetch origin && git merge origin/main` 进你的分支，避免最后 PR 爆冲突。
 
-<!-- 2026-08-29, tianqi, when to PR vs stay on branch -->
 开 PR 的时机：**一块完整功能**测完，而不是每一个 typo。例如「JPEG 增强 + 能出一张表」可以一个 PR；不要把三天的训练+评测+视频捆成一个巨型 PR。功能已经能跑就提，**不要隔夜囤着已经测完的代码**。
-<!-- end -->
 
 ## 2. 小步提交（都提交到个人分支）
 
@@ -64,7 +60,6 @@ git commit -m "feat: add jpeg quality sampler"
 git push -u origin HEAD
 ```
 
-<!-- 2026-08-29, tianqi, commit types are feat/fix/docs/chore/debug not train/data -->
 前缀用 **类型**，不要用模块名：
 
 | 前缀 | 何时 |
@@ -76,7 +71,6 @@ git push -u origin HEAD
 | `debug:` | 临时排查，合 `main` 前尽量清掉 |
 
 分支名仍是 `feat/<who>-<thing>`，和 commit 前缀不是一回事。
-<!-- end -->
 
 一次提交只做一类事。不要把训练脚本和 README 和视频脚本捆在一起。
 

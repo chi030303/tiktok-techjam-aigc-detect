@@ -1,11 +1,9 @@
-# 2026-08-31, tianqi, deliverable 4: clean vs 14 official transforms (contest formula)
 # Robustness Evaluation Summary
 
 Contest score = **0.50×AUC_clean + 0.50×AUC_robust**, where AUC_robust is the mean AUROC over the **14** official keys (not Acc@0.5).
 
 Screen = official demonstration val, **400** images (200 COCO real / 200 DALL·E Advanced), seed 0. Full val (13,843) for last-4 is **0.989**, same ranking.
 
-<!-- 2026-09-01, tianqi, GitHub-visible clean vs transform figures (not Cursor canvas) -->
 ## Visual summary (clean vs transformed)
 
 ![Clean vs 14-transform AUROC](robustness/clean_vs_transforms.png)
@@ -13,7 +11,6 @@ Screen = official demonstration val, **400** images (200 COCO real / 200 DALL·E
 Grouped bars: **AUC clean** vs **mean of 14 transform AUROCs** vs the contest formula. Line chart: the same four models on all 15 official conditions. Weakest keys (JPEG-30, resize ×0.25) are marked.
 
 SVG copies (if PNG does not preview): [clean vs robust](robustness/clean_vs_robust.svg) · [15 conditions](robustness/auroc_15cond.svg). Open [robustness/index.html](robustness/index.html) locally. Rebuild: `python scripts/plot_robustness.py`.
-<!-- end -->
 
 ## Headline
 
@@ -48,7 +45,6 @@ EvalGEN never enters training. Nova is the hard family.
 
 Last-4 is conservative at 0.5 (misses Nova); D3 recovers recall; fuse keeps last-4’s DALL·E ranking and D3’s Nova AUC.
 
-<!-- 2026-09-01, tianqi, D3–D6 mix-in composition and scores after D6 finished -->
 ## SID mix-ins D3–D6 (data, not architecture)
 
 Same protocol: full SID ~140k, **replace** equal SID FLUX, frozen CLIP-B linear + online aug. Official val and EvalGEN never enter train. 400-subset unless noted.
@@ -68,7 +64,5 @@ Same protocol: full SID ~140k, **replace** equal SID FLUX, frozen CLIP-B linear 
 Nova **15-cond** formula (not the contest score): fuse last4+D3 **0.9880**, fuse D5 0.9872, fuse D6 0.9857, D3 mix 0.9865, D5 mix 0.9843, D6 mix 0.9814.
 
 **Takeaway:** D3 is the mix that lifts Nova. D4 extra T2I does not. D5 ≈ D3. D6 only helps i2i pair ranking. Submit last-4 (1 ckpt) or fuse last4+D3 (2 ckpts).
-<!-- end -->
 
 CSV sources: `outputs/tables/official_val400_fuse_u4_d3.csv`, `outputs/tables/compare_spec/README.md`. Figure snapshot: `docs/robustness/official_val400.json`.
-# end
